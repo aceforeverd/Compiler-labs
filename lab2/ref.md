@@ -17,6 +17,7 @@
     ```
     Any character does not match any rule will cause a error.
     A 'COMMENT' STATE util EOF will cause a error about nested comment.
+    A string only match \"[^"]\" will cause the string error
     ```
 
 + ##### end of file handling

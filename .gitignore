@@ -54,3 +54,5 @@ dkms.conf
 *.tar.gz
 *.zip
 ._*
+lab2/lex.yy.c
+lab2/lextest
