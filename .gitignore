@@ -56,3 +56,6 @@ dkms.conf
 ._*
 lab2/lex.yy.c
 lab2/lextest
+.idea
+cmake-build-debug
+CMakeLists.txt
