@@ -119,6 +119,10 @@ exp     :   NIL
             {
                 $$ = $1;
             }
+        |   LPAREN RPAREN
+            {
+                $$ = A_SeqExp(EM_tokPos, NULL);
+            }
         |   LPAREN exps RPAREN
             {
                 A_expList list = $2;
