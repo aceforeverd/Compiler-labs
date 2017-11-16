@@ -126,9 +126,6 @@ exp     :   NIL
         |   LPAREN exps RPAREN
             {
                 A_expList list = $2;
-                if (list == NULL) {
-                    $$ = A_SeqExp(EM_tokPos, NULL);
-                }
                 if (list->tail == NULL) {
                     $$ = list->head;
                 } else {
@@ -426,11 +423,7 @@ lvalue     : ID
                }
            ;
 
-exps       : /* empty */
-             {
-                 $$ = NULL;
-             }
-           | exps_nonempty
+exps       : exps_nonempty
              {
                  $$ = $1;
              }
