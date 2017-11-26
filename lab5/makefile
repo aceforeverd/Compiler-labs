@@ -5,7 +5,7 @@ parse.o: parse.c errormsg.h util.h
 	gcc -g -c parse.c
 
 translate.o: translate.c translate.h
-	gcc -g -c translate.c 
+	gcc -g -c translate.c
 
 frame.o: x86frame.c frame.h
 	gcc -g -c x86frame.c -o frame.o
@@ -13,7 +13,7 @@ frame.o: x86frame.c frame.h
 temp.o: temp.c temp.h
 	gcc -g -c temp.c
 
-tree.o: tree.c tree.h 
+tree.o: tree.c tree.h
 	gcc -g -c tree.c
 
 printtree.o: printtree.c printtree.h
@@ -55,5 +55,5 @@ symbol.o: symbol.c symbol.h
 
 handin:
 	tar -czf id.name.tar.gz  absyn.[ch] errormsg.[ch] makefile gradeMe.sh parse.[ch] prabsyn.[ch] refs-5 symbol.[ch] table.[ch] testcases tiger.lex tiger.y util.[ch] env.[ch] semant.[ch] translate.[ch] *.h *.c
-clean: 
+clean:
 	rm -f a.out parse.o prabsyn.o y.tab.o lex.yy.o errormsg.o util.o table.o absyn.o symbol.o semant.o types.o env.o tree.o temp.o printtree.o frame.o translate.o y.tab.c y.tab.h lex.yy.c y.output *~

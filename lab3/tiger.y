@@ -67,13 +67,13 @@ void yyerror(char *s)
 %type <sval> typeid
 
 %nonassoc ASSIGN WHILE IF FOR ELSE
+%left DOT
 %left OR
 %left AND
 %nonassoc GE LE GT LT EQ NEQ
 %left PLUS MINUS
 %left TIMES DIVIDE
 %left LBRACK RBRACK
-%left DOT
 
 %start program
 
@@ -102,7 +102,7 @@ exp     :   NIL
             {
                 $$ = $1;
             }
-        |   typeid LBRACE fields_assign RBRACE
+        |   ID LBRACE fields_assign RBRACE
             {
                 $$ = A_RecordExp(EM_tokPos, S_Symbol($1), $3);
             }
@@ -110,9 +110,9 @@ exp     :   NIL
             {
                 $$ = A_VarExp(EM_tokPos, $1);
             }
-        |   ID LPAREN params RPAREN
+        |   ID params
             {
-                $$ = A_CallExp(EM_tokPos, S_Symbol($1), $3);
+                $$ = A_CallExp(EM_tokPos, S_Symbol($1), $2);
             }
         /* |   lvalue DOT ID LPAREN params RPAREN */
         |   op_exp
@@ -229,13 +229,13 @@ expseq : exps
          }
        ;
 
-params   : /* empty */
+params   : LPAREN RPAREN
            {
                $$ = NULL;
            }
-         | params_nonempty
+         | LPAREN params_nonempty RPAREN
             {
-                $$ = $1;
+                $$ = $2;
             }
          ;
 
@@ -423,7 +423,11 @@ lvalue     : ID
                }
            ;
 
-exps       : exps_nonempty
+exps       : /* empty */
+             {
+                $$ = NULL;
+             }
+           | exps_nonempty
              {
                  $$ = $1;
              }
