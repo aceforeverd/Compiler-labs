@@ -58,3 +58,9 @@ lab2/lextest
 .idea
 cmake-build-debug
 CMakeLists.txt
+*.out
+*.output
+y.tab.h
+y.tab.c
+lex.yy.c
+.directory
