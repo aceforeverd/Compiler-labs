@@ -58,8 +58,11 @@ struct Temp_map_ {
 };
 
 Temp_map Temp_name(void) {
+    // a global register map
     static Temp_map m = NULL;
-    if (!m) m = Temp_empty();
+    if (!m) {
+        m = Temp_empty();
+    }
     return m;
 }
 

@@ -13,6 +13,7 @@
 
 #define WORDSIZE 4
 const int F_wordSize = 4;
+// frame pointer
 const int REG_FP = 32;
 const int REG_RV = 20;
 
@@ -30,7 +31,10 @@ struct F_frame_ {
     unsigned int n_inFrame;
     Temp_label name;
     // location of frame pointer in frame stack
+
+    // ebp
     T_exp fp;
+
     U_boolList formals;
     F_accessList formals_list;
 };

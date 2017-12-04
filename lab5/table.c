@@ -4,8 +4,8 @@
  */
 
 #include "table.h"
-#include <stdio.h>
 #include "util.h"
+#include <stdio.h>
 
 #define TABSIZE 127
 
@@ -32,9 +32,11 @@ static binder Binder(void *key, void *value, binder next, void *prevtop) {
 
 TAB_table TAB_empty(void) {
     TAB_table t = checked_malloc(sizeof(*t));
-    int i;
     t->top = NULL;
-    for (i = 0; i < TABSIZE; i++) t->table[i] = NULL;
+    int i;
+    for (i = 0; i < TABSIZE; i++) {
+        t->table[i] = NULL;
+    }
     return t;
 }
 

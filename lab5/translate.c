@@ -10,8 +10,6 @@
 #include "tree.h"
 #include "util.h"
 
-// LAB5: you can modify anything you want.
-
 
 struct Tr_access_ {
     Tr_level level;
@@ -149,14 +147,21 @@ Tr_level Tr_Level(F_frame f, Tr_level l) {
 }
 
 static T_exp unEx(Tr_exp e) {
-    if (!e) {
-        return T_Const(0);
-    }
+    assert(e);
+    /* if (!e) { */
+    /*     return T_Const(0); */
+    /* } */
 
     switch (e->kind) {
         case Tr_ex:
+            /*
+             * ex => ex
+             */
             return e->u.ex;
         case Tr_cx: {
+            /*
+             * cx => ex
+             */
             Temp_temp r = Temp_newtemp();
             Temp_label t = Temp_newlabel();
             Temp_label f = Temp_newlabel();
@@ -170,6 +175,9 @@ static T_exp unEx(Tr_exp e) {
                                               T_Eseq(T_Label(t), T_Temp(r))))));
         }
         case Tr_nx:
+            /*
+             * nx => ex
+             */
             return T_Eseq(e->u.nx, T_Const(0));
     }
 
@@ -177,33 +185,52 @@ static T_exp unEx(Tr_exp e) {
 }
 
 static T_stm unNx(Tr_exp e) {
-    if (!e || !e->kind) {
-        return T_Exp(T_Const(0));
-    }
+    assert(e);
+    /* if (!e || !e->kind) { */
+    /*     return T_Exp(T_Const(0)); */
+    /* } */
 
     switch (e->kind) {
         case Tr_ex:
+            assert(e->u.ex);
             return T_Exp(e->u.ex);
         case Tr_nx:
+            assert(e->u.nx);
             return e->u.nx;
         case Tr_cx: {
-            return e->u.cx.stm;
+            Temp_temp r = Temp_newtemp();
+            Temp_label t = Temp_newlabel();
+            Temp_label f = Temp_newlabel();
+            doPatch(e->u.cx.trues, t);
+            doPatch(e->u.cx.falses, f);
+            return T_Seq(
+                    T_Move(T_Temp(r), T_Const(1)),
+                    T_Seq(
+                        e->u.cx.stm,
+                        T_Seq(T_Label(f), T_Seq(T_Move(T_Temp(r), T_Const(0)),
+                                T_Seq(T_Label(t), T_Exp(T_Temp(r)))))));
         }
     }
 }
 
 static struct Cx unCx(Tr_exp e) {
-    struct Cx cx;
+    assert(e);
 
-    if (!e || !e->kind) {
-        cx.stm = T_Exp(T_Const(0));
-        cx.falses = NULL;
-        cx.trues = NULL;
-        return cx;
-    }
+    /* if (!e || !e->kind) { */
+    /*     cx.stm = T_Exp(T_Const(0)); */
+    /*     cx.falses = NULL; */
+    /*     cx.trues = NULL; */
+    /*     return cx; */
+    /* } */
+    struct Cx cx;
 
     switch (e->kind) {
         case Tr_ex: {
+            /*
+             * ex => cx
+             * this is not so useful ?
+             */
+            assert(e->u.ex);
             T_exp exp = e->u.ex;
             cx.stm = T_Exp(exp);
             if (exp->kind == T_CONST) {
@@ -211,6 +238,7 @@ static struct Cx unCx(Tr_exp e) {
             }
         }
         case Tr_nx:
+            assert(e->u.nx);
             printf("unCx see a Tr_exp with kind Tr_nx\n");
             cx.trues = NULL;
             cx.falses = NULL;
@@ -219,6 +247,8 @@ static struct Cx unCx(Tr_exp e) {
         case Tr_cx:
             return e->u.cx;
     }
+
+    assert(0);
 }
 
 void doPatch(patchList tList, Temp_label label) {

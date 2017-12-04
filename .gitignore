@@ -58,7 +58,7 @@ lab2/lextest
 .idea
 cmake-build-debug
 CMakeLists.txt
-*.out
+a.out
 *.output
 y.tab.h
 y.tab.c
