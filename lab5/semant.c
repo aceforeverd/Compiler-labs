@@ -50,12 +50,15 @@ struct expty transVar(S_table venv, S_table tenv, A_var v, Tr_level level, Temp_
                 EM_error(v->u.field.var->pos, "not a record type");
                 return expTy(NULL, Ty_Void());
             }
-            Ty_field t_field = FieldList_lookup(t_var.ty->u.record, v->u.field.sym);
-            if (!t_field) {
+            Ty_field_wrap field_wrap = FieldList_lookup(t_var.ty->u.record, v->u.field.sym);
+            if (!field_wrap) {
+                /*
+                 * filed not found
+                 */
                 EM_error(v->u.field.var->pos, "field %s doesn't exist", S_name(v->u.field.sym));
                 return expTy(NULL, Ty_Void());
             }
-            return expTy(Tr_fieldVar(t_var.exp, 0), t_field->ty);
+            return expTy(Tr_fieldVar(t_var.exp, field_wrap->offset), field_wrap->field->ty);
         }
 
         case A_subscriptVar: {
@@ -64,10 +67,12 @@ struct expty transVar(S_table venv, S_table tenv, A_var v, Tr_level level, Temp_
              */
             expty_t t_var = transVar(venv, tenv, v->u.subscript.var, level, label);
             if (t_var.ty->kind != Ty_array) {
+                /* var is not a array */
                 EM_error(v->u.subscript.var->pos, "array type required");
             }
             expty_t t_exp = transExp(venv, tenv, v->u.subscript.exp, level, label);
             if (t_exp.ty->kind != Ty_int) {
+                /* exp is not integer */
                 EM_error(v->u.subscript.exp->pos, "exp of subscript should be int");
             }
 

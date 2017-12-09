@@ -29,15 +29,23 @@ struct F_access_ {
 struct F_frame_ {
     unsigned int n_locals;
     unsigned int n_inFrame;
+    /* name of the frame */
     Temp_label name;
     // location of frame pointer in frame stack
 
-    // ebp
+    /*
+     * the frame pointer
+     * should be stored in a special register
+     * usually ebp
+     *
+     * T_Temp()
+     */
     T_exp fp;
 
     U_boolList formals;
     F_accessList formals_list;
 };
+
 static struct F_frame_ root_frame = {0, 0, NULL, NULL, NULL, NULL};
 
 static F_accessList F_AccessList(F_access head, F_accessList tail);
@@ -69,14 +77,24 @@ Temp_temp F_FP() {
     return Temp_explicitTemp(REG_FP);
 }
 
+/*
+ * return frame pointer of f
+ */
 T_exp F_framePtr(F_frame f) {
+    assert(f);
     return f->fp;
 }
 
+/*
+ * return previous frame pointer
+ */
 T_exp F_preFramPtr(F_frame f) {
     return T_Mem(F_framePtr(f));
 }
 
+/*
+ * return a T_exp for the F_access
+ */
 T_exp F_Exp(F_access acc, T_exp framePtr) {
     switch (acc->kind) {
         case inFrame:
@@ -104,7 +122,7 @@ F_frame F_newFrame(Temp_label name, U_boolList formals) {
 
     frame->name = name;
     frame->formals = formals;
-    frame->fp = 0;
+    frame->fp = T_Temp(F_FP());
     frame->n_locals = 0;
     frame->n_inFrame = 0;
 
@@ -117,6 +135,15 @@ Temp_label F_name(F_frame f) {
 
 F_accessList F_formals(F_frame f) {
     return F_gen_formals(f, f->formals);
+}
+
+static F_accessList F_gen_formals(F_frame frame, U_boolList boolList) {
+    if (!boolList || !boolList->head) {
+        return NULL;
+    }
+
+    return F_AccessList(F_allocLocal(frame, boolList->head),
+                        F_gen_formals(frame, boolList->tail));
 }
 
 F_access F_allocLocal(F_frame f, bool escape) {
@@ -138,15 +165,6 @@ static F_accessList F_AccessList(F_access head, F_accessList tail) {
     list->tail = tail;
 
     return list;
-}
-
-static F_accessList F_gen_formals(F_frame frame, U_boolList boolList) {
-    if (!boolList || !boolList->head) {
-        return NULL;
-    }
-
-    return F_AccessList(F_allocLocal(frame, boolList->head),
-                        F_gen_formals(frame, boolList->tail));
 }
 
 static F_access InFrame(int offset) {

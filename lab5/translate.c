@@ -128,6 +128,12 @@ static Tr_access Tr_Access(Tr_level level, F_access access) {
     return ta;
 }
 
+static Tr_accessList TrtoF_accessList(F_accessList list) {
+    return Tr_AccessList(
+
+            )
+}
+
 static patchList PatchList(Temp_label *head, patchList tail) {
     patchList list;
 
@@ -308,27 +314,36 @@ void Tr_init() {
     a_fraglist = F_FragList(F_ProcFrag(NULL, outermost_level.frame), NULL);
 }
 
-Tr_exp Tr_simpleVar(Tr_access access, Tr_level level) {
-    // return Tr_Ex(F_Exp(access->access,
-    //                   follow_static_link(level, access->level)));
-    return Tr_Ex(T_Const(0));
+/* @declared_access: Tr_access of decalcification
+ * @call_level: Tr_level of invocation
+ */
+Tr_exp Tr_simpleVar(Tr_access declared_access, Tr_level call_level) {
+    return Tr_Ex(F_Exp(declared_access->access,
+                       follow_static_link(call_level, declared_access->level)));
 }
 
+/*
+ * get the frame pointer of the F_frame where declared that variable/function
+ * since register ebp is overwritten, it should query recursively from call level
+ */
 static T_exp follow_static_link(Tr_level call_level, Tr_level dec_level) {
+    assert(call_level);
+
+    T_exp exp = F_framePtr(call_level->frame);
     Tr_level level = call_level;
-    T_exp exp = F_framePtr(level->frame);
     while (level != dec_level) {
-        exp = T_Mem(exp);
-        level = call_level->parent;
+        exp = F_preFramPtr(level->frame);
+        level = level->parent;
     }
 
     return exp;
 }
 
 Tr_exp Tr_subscriptVar(Tr_exp head, Tr_exp sub) {
-    return Tr_Ex(
-            T_Mem(T_Binop(T_plus, T_Mem(head->u.ex), T_Binop(T_plus, sub->u.ex, T_Const(F_wordSize))))
-    );
+    return Tr_Ex(T_Mem(
+                T_Binop(T_plus, T_Mem(unEx(head)),
+                    T_Binop(T_mul, unEx(sub), T_Const(F_wordSize)
+                        ))));
 }
 
 Tr_exp Tr_fieldVar(Tr_exp var, int order) {

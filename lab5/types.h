@@ -58,7 +58,16 @@ Ty_fieldList Ty_FieldList(Ty_field head, Ty_fieldList tail);
 void Ty_print(Ty_ty t);
 void TyList_print(Ty_tyList list);
 
-Ty_field FieldList_lookup(Ty_fieldList list, S_symbol sym);
+struct Ty_field_wrap_ {
+    Ty_field field;
+    /*
+     * the offset of the field
+     */
+    int offset;
+};
+typedef struct Ty_field_wrap_ *Ty_field_wrap;
+Ty_field_wrap FieldList_lookup(Ty_fieldList list, S_symbol sym);
+
 void Exp_print(A_exp exp);
 
 

@@ -92,15 +92,23 @@ Ty_fieldList Ty_FieldList(Ty_field head, Ty_fieldList tail)
     return p;
 }
 
-Ty_field FieldList_lookup(Ty_fieldList list, S_symbol sym) {
+Ty_field_wrap FieldList_lookup(Ty_fieldList list, S_symbol sym) {
     Ty_field field;
     Ty_fieldList ls = list;
+    int pos = 0;
     while (ls) {
         field = ls->head;
         if (field->name == sym) {
-            return field;
+            Ty_field_wrap field_wrap = checked_malloc(sizeof(*field_wrap));
+            field_wrap->field = field;
+            field_wrap->offset = pos;
+            return field_wrap;
         }
 
+        /*
+         * assume every field take 4 bytes
+         */
+        pos += 4;
         ls = ls->tail;
     }
 

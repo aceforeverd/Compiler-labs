@@ -107,6 +107,8 @@ T_expList T_ExpList(T_exp head, T_expList tail);
 T_stmList T_StmList(T_stm head, T_stmList tail);
 
 T_stm T_Seq(T_stm left, T_stm right);
+
+/* the lable in assembly, target of call, jump, etc */
 T_stm T_Label(Temp_label);
 T_stm T_Jump(T_exp exp, Temp_labelList labels);
 T_stm T_Cjump(T_relOp op, T_exp left, T_exp right, Temp_label true_label,
@@ -116,10 +118,23 @@ T_stm T_Exp(T_exp);
 
 T_exp T_Binop(T_binOp, T_exp, T_exp);
 T_exp T_Mem(T_exp);
+
+/* register */
 T_exp T_Temp(Temp_temp);
 T_exp T_Eseq(T_stm, T_exp);
+
+/*
+ * assembly language symbol
+ * it is a Symbolic lable,
+ * which is a label name followed by a colon(:),
+ *
+ * I do not consider Numberic Label yet.
+ */
 T_exp T_Name(Temp_label);
+
+/* const variable */
 T_exp T_Const(int);
+/* call expression */
 T_exp T_Call(T_exp, T_expList);
 
 T_relOp T_notRel(T_relOp);  /* a op b    ==     not(a notRel(op) b)  */
