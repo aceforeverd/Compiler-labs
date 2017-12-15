@@ -35,7 +35,7 @@ void Tr_init();
 
 Tr_exp Tr_simpleVar(Tr_access access, Tr_level level);
 
-static T_exp follow_static_link(Tr_level call_level, Tr_level dec_level);
+T_exp follow_static_link(Tr_level call_level, Tr_level dec_level);
 
 Tr_exp Tr_subscriptVar(Tr_exp head, Tr_exp sub);
 
@@ -51,7 +51,7 @@ Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp els, Tr_level level);
 
 Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body);
 
-Tr_exp Tr_callExp(S_symbol func, Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_expList args);
+Tr_exp Tr_callExp(Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_expList args);
 
 Tr_exp Tr_letExp(Tr_exp body, Tr_level level);
 

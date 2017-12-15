@@ -105,7 +105,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level, Te
             }
             Tr_expList list = check_function_params(venv, tenv, aExp->pos, aExp->u.call.args, f_entry->u.fun.formals,
                                                    aExp->u.call.func, level, label);
-             return expTy(Tr_callExp(aExp->u.call.func, f_entry->u.fun.label, level, f_entry->u.fun.level, list),
+             return expTy(Tr_callExp(f_entry->u.fun.label, level, f_entry->u.fun.level, list),
                         f_entry->u.fun.result);
         }
         case A_opExp: {

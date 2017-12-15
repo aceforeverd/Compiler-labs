@@ -46,6 +46,7 @@ struct F_fragList_ {
 };
 
 F_fragList F_FragList(F_frag head, F_fragList tail);
+void F_FragListAppend(F_fragList list, F_frag item);
 
 Temp_temp F_FP();
 T_exp F_framePtr(F_frame f);

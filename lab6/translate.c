@@ -72,7 +72,6 @@ static F_fragList fragList_tail = NULL;
 static Tr_exp Tr_Ex(T_exp ex);
 static Tr_exp Tr_Nx(T_stm nx);
 static Tr_exp Tr_Cx(patchList trues, patchList falses, T_stm stm);
-static T_expList unExList(Tr_expList list);
 
 static Tr_access Tr_Access(Tr_level level, F_access access);
 Tr_level Tr_Level(F_frame f, Tr_level l);
@@ -81,14 +80,7 @@ patchList joinPatch(patchList first, patchList second);
 static T_exp unEx(Tr_exp e);
 static T_stm unNx(Tr_exp e);
 static struct Cx unCx(Tr_exp e);
-
-static T_expList unExList(Tr_expList list) {
-    if (!list) {
-        return NULL;
-    }
-
-    return T_ExpList(unEx(list->head), unExList(list->tail));
-}
+static T_expList unExList(Tr_expList list);
 
 static Tr_exp Tr_Ex(T_exp ex) {
     Tr_exp exp = checked_malloc(sizeof(*exp));
@@ -257,6 +249,15 @@ static struct Cx unCx(Tr_exp e) {
     assert(0);
 }
 
+static T_expList unExList(Tr_expList list) {
+    if (!list) {
+        return NULL;
+    }
+
+    return T_ExpList(unEx(list->head), unExList(list->tail));
+}
+
+
 void doPatch(patchList tList, Temp_label label) {
     for (; tList; tList = tList->tail) {
         *(tList->head) = label;
@@ -326,7 +327,7 @@ Tr_exp Tr_simpleVar(Tr_access declared_access, Tr_level call_level) {
  * get the frame pointer of the F_frame where declared that variable/function
  * since register ebp is overwritten, it should query recursively from call level
  */
-static T_exp follow_static_link(Tr_level call_level, Tr_level dec_level) {
+T_exp follow_static_link(Tr_level call_level, Tr_level dec_level) {
     assert(call_level);
 
     T_exp exp = F_framePtr(call_level->frame);
@@ -356,10 +357,9 @@ Tr_exp Tr_intExp(int var) {
 
 Tr_exp Tr_stringExp(string str) {
     // putting the string
-    size_t size = strlen(str);
     Temp_label label = Temp_newlabel();
 
-    a_fraglist = F_FragList(F_StringFrag(label, str), a_fraglist);
+    F_FragListAppend(a_fraglist, F_StringFrag(label, str));
 
     return Tr_Ex(T_Name(label));
 }
@@ -428,12 +428,13 @@ Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body) {
     )));
 }
 
-Tr_exp Tr_callExp(S_symbol func, Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_expList args) {
-    // T_exp fp = follow_static_link(call_level, dec_level);
+Tr_exp Tr_callExp(Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_expList args) {
+    /* one more argument, static link */
+    T_exp fp = follow_static_link(call_level, dec_level);
 
     return Tr_Ex(T_Call(
             T_Name(label),
-            T_ExpList(T_Const(0), unExList(args))
+            T_ExpList(fp, unExList(args))
     ));
 }
 

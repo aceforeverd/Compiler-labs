@@ -9,8 +9,6 @@
 #include "tree.h"
 #include "util.h"
 
-/*Lab5: Your implementation here.*/
-
 #define WORDSIZE 4
 const int F_wordSize = 4;
 // frame pointer
@@ -53,12 +51,19 @@ static F_accessList F_gen_formals(F_frame frame, U_boolList boolList);
 static F_access InFrame(int offset);
 static F_access InReg(Temp_temp reg);
 
+/*
+ * make a label for a string
+ * the string length followed by the string
+ */
 F_frag F_StringFrag(Temp_label label, string str) {
     F_frag f = checked_malloc(sizeof(*f));
 
     f->kind = F_stringFrag;
     f->u.stringg.str = str;
     f->u.stringg.label = label;
+
+    /*! TODO: write to memory
+     */
 
     return f;
 }
@@ -71,6 +76,25 @@ F_frag F_ProcFrag(T_stm body, F_frame frame) {
     f->u.proc.frame = frame;
 
     return f;
+}
+
+F_fragList F_FragList(F_frag head, F_fragList tail) {
+    F_fragList a_fragList = checked_malloc(sizeof(*a_fragList));
+
+    a_fragList->head = head;
+    a_fragList->tail = tail;
+
+    return a_fragList;
+}
+
+
+/*
+ * append item to the end of the list
+ */
+void F_FragListAppend(F_fragList list, F_frag item) {
+    for (; list->tail; list = list->tail) {}
+
+    list->tail = F_FragList(item, NULL);
 }
 
 Temp_temp F_FP() {
@@ -106,15 +130,6 @@ T_exp F_Exp(F_access acc, T_exp framePtr) {
 
 Temp_temp F_RV() {
     return Temp_explicitTemp(REG_RV);
-}
-
-F_fragList F_FragList(F_frag head, F_fragList tail) {
-    F_fragList a_fragList = checked_malloc(sizeof(*a_fragList));
-
-    a_fragList->head = head;
-    a_fragList->tail = tail;
-
-    return a_fragList;
 }
 
 F_frame F_newFrame(Temp_label name, U_boolList formals) {
