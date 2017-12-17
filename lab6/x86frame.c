@@ -13,7 +13,13 @@
 const int F_wordSize = 4;
 // frame pointer
 const int REG_FP = 32;
-const int REG_RV = 20;
+const int REG_SP= 19;
+const int REG_CALLER_SAVE = 21;
+const int REG_RET_ADDR = 22;
+const int REG_RET_VAL = 23;
+const int REG_MUL_HIGH = 24;
+const int REG_MUL_LOW = 25;
+const int REG_ZERO = 26;
 
 // varibales
 struct F_access_ {
@@ -129,7 +135,7 @@ T_exp F_Exp(F_access acc, T_exp framePtr) {
 }
 
 Temp_temp F_RV() {
-    return Temp_explicitTemp(REG_RV);
+    return Temp_explicitTemp(REG_RET_VAL);
 }
 
 F_frame F_newFrame(Temp_label name, U_boolList formals) {
@@ -208,7 +214,39 @@ T_stm F_procEntryExit1(F_frame frame, T_stm stm) {
     return stm;
 }
 
+static Temp_tempList returnSink = NULL;
+AS_instrList F_procEntryExit2(AS_instrList body) {
+    if (!returnSink) {
+        returnSink = Temp_TempList(Temp_explicitTemp(REG_ZERO),
+                Temp_TempList(Temp_explicitTemp(REG_SP), CalleeSaves()));
+    }
+
+    return AS_splice(body, AS_InstrList(AS_Oper(
+                    "", NULL, returnSink, NULL), NULL));
+}
+
+AS_proc F_procEntryExit3(F_frame frame, AS_instrList body) {
+    char buf[100];
+    sprintf(buf, "PROCEDURE %s\n", S_name(frame->name));
+    return AS_Proc(String(buf), body, "END\n");
+}
+
+
 F_frame outermost_frame() {
     return &root_frame;
 }
 
+Temp_tempList CalleeSaves() {
+    return Temp_TempList(Temp_explicitTemp(REG_RET_VAL),
+            Temp_TempList(Temp_explicitTemp(REG_RET_ADDR), NULL));
+}
+/* return a list of temp that reserved by call function */
+Temp_tempList CallDefs() {
+    return Temp_TempList(Temp_explicitTemp(REG_CALLER_SAVE),
+            CalleeSaves());
+}
+/* return a list of temps that reserved by MUL AND DIV */
+Temp_tempList MulDefs() {
+    return Temp_TempList(Temp_explicitTemp(REG_MUL_HIGH),
+            Temp_TempList(Temp_explicitTemp(REG_MUL_LOW), NULL));
+}

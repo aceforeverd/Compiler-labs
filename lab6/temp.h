@@ -20,6 +20,7 @@ struct Temp_tempList_ {
     Temp_tempList tail;
 };
 Temp_tempList Temp_TempList(Temp_temp h, Temp_tempList t);
+Temp_tempList Temp_ListSplice(Temp_tempList left, Temp_tempList right);
 
 // Labels abstract name for static memory address
 typedef S_symbol Temp_label;
@@ -42,5 +43,6 @@ string Temp_look(Temp_map m, Temp_temp t);
 void Temp_dumpMap(FILE *out, Temp_map m);
 
 Temp_map Temp_name(void);
+int Temp_num(Temp_temp temp);
 
 #endif

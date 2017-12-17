@@ -51,10 +51,16 @@ struct stmExp {
     T_exp e;
 };
 
+/*
+ * takes a list of expressions and returns a pair of
+ *  (statement, expression-list).
+ */
 static T_stm reorder(expRefList rlist) {
-    if (!rlist)
+    if (!rlist) {
         return T_Exp(T_Const(0)); /* nop */
-    else if ((*rlist->head)->kind == T_CALL) {
+    }
+
+    if ((*rlist->head)->kind == T_CALL) {
         Temp_temp t = Temp_newtemp();
         *rlist->head = T_Eseq(T_Move(T_Temp(t), *rlist->head), T_Temp(t));
         return reorder(rlist);
@@ -72,12 +78,16 @@ static T_stm reorder(expRefList rlist) {
     }
 }
 
+/*
+ * get expRefList of a call expression
+ */
 static expRefList get_call_rlist(T_exp exp) {
     expRefList rlist, curr;
     T_expList args = exp->u.CALL.args;
     curr = rlist = ExpRefList(&exp->u.CALL.fun, NULL);
     for (; args; args = args->tail) {
-        curr = curr->tail = ExpRefList(&args->head, NULL);
+        curr->tail = ExpRefList(&args->head, NULL);
+        curr = curr->tail;
     }
     return rlist;
 }
@@ -89,6 +99,9 @@ static struct stmExp StmExp(T_stm stm, T_exp exp) {
     return x;
 }
 
+/*
+ * return a statement s1 and a expression e2 which contains no ESEQ
+ */
 static struct stmExp do_exp(T_exp exp) {
     switch (exp->kind) {
         case T_BINOP:
@@ -144,12 +157,16 @@ static T_stm do_stm(T_stm stm) {
     }
 }
 
-/* linear gets rid of the top-level SEQ's, producing a list */
+/*
+ * linear gets rid of the top-level SEQ's, producing a list
+ * SEQ ( SEQ (a, b), c) => SEQ (a, seq(b, c))
+ */
 static T_stmList linear(T_stm stm, T_stmList right) {
-    if (stm->kind == T_SEQ)
+    if (stm->kind == T_SEQ) {
         return linear(stm->u.SEQ.left, linear(stm->u.SEQ.right, right));
-    else
-        return T_StmList(stm, right);
+    }
+
+    return T_StmList(stm, right);
 }
 
 /* From an arbitrary Tree statement, produce a list of cleaned trees

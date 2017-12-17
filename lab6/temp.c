@@ -5,13 +5,13 @@
  *
  */
 
+#include "symbol.h"
+#include "table.h"
 #include "temp.h"
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "symbol.h"
-#include "table.h"
-#include "util.h"
 
 struct Temp_temp_ {
     int num;
@@ -52,6 +52,27 @@ Temp_temp Temp_explicitTemp(int num) {
     return temp;
 }
 
+Temp_tempList Temp_TempList(Temp_temp h, Temp_tempList t) {
+    Temp_tempList p = (Temp_tempList)checked_malloc(sizeof(*p));
+    p->head = h;
+    p->tail = t;
+    return p;
+}
+
+Temp_tempList Temp_ListSplice(Temp_tempList left, Temp_tempList right) {
+    if (left == NULL) {
+        return right;
+    }
+
+    Temp_tempList ls = left;
+    while (ls->tail) {
+        ls = ls->tail;
+    }
+
+    ls->tail = right;
+    return left;
+}
+
 struct Temp_map_ {
     TAB_table tab;
     Temp_map under;
@@ -64,6 +85,10 @@ Temp_map Temp_name(void) {
         m = Temp_empty();
     }
     return m;
+}
+
+int Temp_num(Temp_temp temp) {
+    return temp->num;
 }
 
 Temp_map newMap(TAB_table tab, Temp_map under) {
@@ -99,13 +124,6 @@ string Temp_look(Temp_map m, Temp_temp t) {
         return Temp_look(m->under, t);
     else
         return NULL;
-}
-
-Temp_tempList Temp_TempList(Temp_temp h, Temp_tempList t) {
-    Temp_tempList p = (Temp_tempList)checked_malloc(sizeof(*p));
-    p->head = h;
-    p->tail = t;
-    return p;
 }
 
 Temp_labelList Temp_LabelList(Temp_label h, Temp_labelList t) {

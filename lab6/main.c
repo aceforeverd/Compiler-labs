@@ -2,7 +2,6 @@
  * main.c
  */
 
-#include <stdio.h>
 #include "absyn.h"
 #include "assem.h"
 #include "canon.h"
@@ -22,6 +21,7 @@
 #include "tree.h" /* needed by frame.h */
 #include "types.h"
 #include "util.h"
+#include <stdio.h>
 
 extern bool anyErrors;
 
