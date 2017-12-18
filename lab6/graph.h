@@ -4,6 +4,8 @@
 
 #ifndef GRAPH_H
 #define GRAPH_H
+#include "util.h"
+#include <stdio.h>
 
 typedef struct G_graph_ *G_graph;  /* The "graph" type */
 typedef struct G_node_ *G_node;    /* The "node" type */
@@ -12,12 +14,15 @@ typedef struct G_nodeList_ *G_nodeList;
 struct G_nodeList_ { G_node head; G_nodeList tail;};
 
 /* Make a new graph */
-G_graph G_Graph(void); 
+G_graph G_Graph(void);
 /* Make a new node in graph "g", with associated "info" */
 G_node G_Node(G_graph g, void *info);
 
 /* Make a NodeList cell */
 G_nodeList G_NodeList(G_node head, G_nodeList tail);
+
+/* get the last node of a graph */
+G_node G_lastNode(G_graph g);
 
 /* Get the list of nodes belonging to "g" */
 G_nodeList G_nodes(G_graph g);

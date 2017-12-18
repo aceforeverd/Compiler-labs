@@ -12,22 +12,33 @@
 #include "table.h"
 #include "temp.h"
 #include "tree.h"
-#include "util.h"
-#include <stdio.h>
 
 struct G_graph_ {
     int nodecount;
-    G_nodeList mynodes, mylast;
+    G_nodeList mynodes;
+    /* the tail */
+    G_nodeList mylast;
 };
 
 struct G_node_ {
     G_graph mygraph;
+    /*
+     * somewhat a index key
+     */
     int mykey;
     G_nodeList succs;
     G_nodeList preds;
+
+    /*
+     * extra info
+     * a pointer to AS_instr in flowgraph.h
+     */
     void *info;
 };
 
+/*
+ * create a empty grpah
+ */
 G_graph G_Graph(void) {
     G_graph g = (G_graph)checked_malloc(sizeof *g);
     g->nodecount = 0;
@@ -43,6 +54,16 @@ G_nodeList G_NodeList(G_node head, G_nodeList tail) {
     return n;
 }
 
+/* get the last node of a graph */
+G_node G_lastNode(G_graph g) {
+    assert(g);
+    if (g->mylast == NULL) {
+        return NULL;
+    }
+
+    return g->mylast->head;
+}
+
 /* generic creation of G_node */
 G_node G_Node(G_graph g, void *info) {
     G_node n = (G_node)checked_malloc(sizeof *n);
@@ -51,10 +72,13 @@ G_node G_Node(G_graph g, void *info) {
     n->mygraph = g;
     n->mykey = g->nodecount++;
 
-    if (g->mylast == NULL)
-        g->mynodes = g->mylast = p;
-    else
-        g->mylast = g->mylast->tail = p;
+    if (g->mylast == NULL) {
+        g->mylast = p;
+        g->mynodes = g->mylast;
+    } else {
+        g->mylast->tail = p;
+        g->mylast = g->mylast->tail;
+    }
 
     n->succs = NULL;
     n->preds = NULL;
@@ -75,21 +99,29 @@ bool G_inNodeList(G_node a, G_nodeList l) {
     return FALSE;
 }
 
+/* add an edge */
 void G_addEdge(G_node from, G_node to) {
     assert(from);
     assert(to);
     assert(from->mygraph == to->mygraph);
-    if (G_goesTo(from, to)) return;
+
+    if (G_goesTo(from, to))
+        return;
+
     to->preds = G_NodeList(from, to->preds);
     from->succs = G_NodeList(to, from->succs);
 }
 
-static G_nodeList delete (G_node a, G_nodeList l) {
+/*
+ * delete a node from NodeList L
+ */
+static G_nodeList delete(G_node a, G_nodeList l) {
     assert(a && l);
-    if (a == l->head)
+    if (a == l->head) {
         return l->tail;
-    else
-        return G_NodeList(l->head, delete (a, l->tail));
+    }
+
+    return G_NodeList(l->head, delete(a, l->tail));
 }
 
 void G_rmEdge(G_node from, G_node to) {
@@ -114,23 +146,34 @@ void G_show(FILE *out, G_nodeList p, void showInfo(void *)) {
     }
 }
 
+/*
+ * get successor of node n
+ */
 G_nodeList G_succ(G_node n) {
     assert(n);
     return n->succs;
 }
 
+/*
+ * get previous node of n
+ */
 G_nodeList G_pred(G_node n) {
     assert(n);
     return n->preds;
 }
 
+/*
+ * if n is in the list of succ(from)
+ */
 bool G_goesTo(G_node from, G_node n) { return G_inNodeList(n, G_succ(from)); }
 
 /* return length of predecessor list for node n */
 static int inDegree(G_node n) {
     int deg = 0;
     G_nodeList p;
-    for (p = G_pred(n); p != NULL; p = p->tail) deg++;
+    for (p = G_pred(n); p != NULL; p = p->tail) {
+        deg++;
+    }
     return deg;
 }
 
@@ -138,7 +181,9 @@ static int inDegree(G_node n) {
 static int outDegree(G_node n) {
     int deg = 0;
     G_nodeList p;
-    for (p = G_succ(n); p != NULL; p = p->tail) deg++;
+    for (p = G_succ(n); p != NULL; p = p->tail) {
+        deg++;
+    }
     return deg;
 }
 
@@ -148,8 +193,8 @@ int G_degree(G_node n) { return inDegree(n) + outDegree(n); }
 static G_nodeList cat(G_nodeList a, G_nodeList b) {
     if (a == NULL)
         return b;
-    else
-        return G_NodeList(a->head, cat(a->tail, b));
+
+    return G_NodeList(a->head, cat(a->tail, b));
 }
 
 /* create the adjacency list for node n by combining the successor and
