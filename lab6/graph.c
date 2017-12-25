@@ -32,6 +32,7 @@ struct G_node_ {
     /*
      * extra info
      * a pointer to AS_instr in flowgraph.h
+     * or a temporary in interference graph
      */
     void *info;
 };
@@ -160,6 +161,11 @@ G_nodeList G_succ(G_node n) {
 G_nodeList G_pred(G_node n) {
     assert(n);
     return n->preds;
+}
+
+/* get number of the nodes in a graph */
+int G_grapthNodes(G_graph graph) {
+    return graph->nodecount;
 }
 
 /*

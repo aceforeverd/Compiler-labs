@@ -31,6 +31,7 @@ Temp_label Temp_newlabel(void) {
  * else it will just return the original one */
 Temp_label Temp_namedlabel(string s) { return S_Symbol(s); }
 
+/* tmps < 100 for reserved registers, or to say, explicit registers */
 static int temps = 100;
 
 Temp_temp Temp_newtemp(void) {
@@ -45,6 +46,7 @@ Temp_temp Temp_newtemp(void) {
 }
 
 Temp_temp Temp_explicitTemp(int num) {
+    assert(num < 100);
     Temp_temp temp = (Temp_temp) checked_malloc(sizeof(*temp));
 
     temp->num = num;
@@ -73,11 +75,111 @@ Temp_tempList Temp_ListSplice(Temp_tempList left, Temp_tempList right) {
     return left;
 }
 
+bool Temp_equal(Temp_temp a, Temp_temp b) {
+    assert(a && b);
+    return a->num == b->num;
+}
+
+bool Temp_ListInclude(Temp_tempList body, Temp_temp item) {
+    assert(body);
+    if (!item) {
+        return 0;
+    }
+
+    while (body) {
+        if (Temp_equal(body->head, item)) {
+            return 1;
+        }
+        body = body->tail;
+    }
+
+    return 0;
+}
+
+/*
+ * templsit += temp
+ */
+Temp_tempList Temp_ListAppend(Temp_tempList body, Temp_temp item) {
+    if (Temp_ListInclude(body, item)) {
+        return body;
+    }
+
+    return Temp_TempList(item, body);
+}
+
+/*
+ * templsit -= temp
+ */
+Temp_tempList Temp_ListExcludeTemp(Temp_tempList body, Temp_temp item) {
+    if (!item || !body) {
+        return body;
+    }
+
+    if (Temp_equal(body->head, item)) {
+        return body->tail;
+    }
+
+    return Temp_TempList(body->head, Temp_ListExcludeTemp(body->tail, item));
+}
+
+/*
+ * templsit -= temp
+ */
+Temp_tempList Temp_ListExcludeTemp2(Temp_tempList body, Temp_temp item) {
+    assert(body);
+    if (!item) {
+        return body;
+    }
+
+    Temp_tempList list = body;
+    Temp_tempList pre = NULL;
+    while (list) {
+        if (Temp_equal(list->head, item)) {
+            if (!pre) {
+                return list->tail;
+            } else {
+                pre->tail = list->tail;
+                return body;
+            }
+        }
+
+        pre = list;
+        list = list->tail;
+    }
+
+    return body;
+}
+/*
+ * exclude tempList right from left
+ * templist -= templist2
+ */
+Temp_tempList Temp_ListExclude(Temp_tempList left, Temp_tempList right) {
+    while (right) {
+        left = Temp_ListExcludeTemp(left, right->head);
+        right = right->tail;
+    }
+
+    return left;
+}
+
+/*
+ * union TempList right with left
+ * templist = templist1 + templist2
+ */
+Temp_tempList Temp_ListUnion(Temp_tempList left, Temp_tempList right) {
+    while (right) {
+        left = Temp_ListAppend(left, right->head);
+        right = right->tail;
+    }
+    return left;
+}
+
 struct Temp_map_ {
     TAB_table tab;
     Temp_map under;
 };
 
+/* return the global resgister(temp) map */
 Temp_map Temp_name(void) {
     // a global register map
     static Temp_map m = NULL;

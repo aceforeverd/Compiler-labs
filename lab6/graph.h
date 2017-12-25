@@ -47,6 +47,9 @@ G_nodeList G_succ(G_node n);
 /* Get all the predecessors of node "n" */
 G_nodeList G_pred(G_node n);
 
+/* get number of the nodes in a graph */
+int G_grapthNodes(G_graph graph);
+
 /* Tell if there is an edge from "from" to "to" */
 bool G_goesTo(G_node from, G_node n);
 

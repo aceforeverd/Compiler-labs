@@ -27,7 +27,7 @@
 
 //assignExp
 #define get_assexp_var(a) (a->u.assign.var)
-#define get_assexp_exp(a) (a->u.assign.exp) 
+#define get_assexp_exp(a) (a->u.assign.exp)
 
 //ifexp
 #define get_ifexp_test(a) (a->u.iff.test)

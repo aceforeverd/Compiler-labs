@@ -21,6 +21,13 @@ struct Temp_tempList_ {
 };
 Temp_tempList Temp_TempList(Temp_temp h, Temp_tempList t);
 Temp_tempList Temp_ListSplice(Temp_tempList left, Temp_tempList right);
+bool Temp_equal(Temp_temp a, Temp_temp b);
+bool Temp_ListInclude(Temp_tempList body, Temp_temp item);
+Temp_tempList Temp_ListAppend(Temp_tempList body, Temp_temp item);
+Temp_tempList Temp_ListExcludeTemp(Temp_tempList body, Temp_temp item);
+Temp_tempList Temp_ListExcludeTemp2(Temp_tempList body, Temp_temp item);
+Temp_tempList Temp_ListExclude(Temp_tempList left, Temp_tempList right);
+Temp_tempList Temp_ListUnion(Temp_tempList left, Temp_tempList right);
 
 // Labels abstract name for static memory address
 typedef S_symbol Temp_label;
