@@ -80,24 +80,103 @@ bool Temp_equal(Temp_temp a, Temp_temp b) {
     return a->num == b->num;
 }
 
+/* a >= b ? */
+bool Temp_compare(Temp_temp a, Temp_temp b) {
+    return a->num >= b->num;
+}
+
+bool Temp_ListEqual(Temp_tempList a, Temp_tempList b) {
+    if (!a && !b) return TRUE;
+    if (!a || !b) return FALSE;
+
+    int l1 = Temp_ListLength(a);
+    int l2 = Temp_ListLength(b);
+    if (l1 != l2) return FALSE;
+
+    bool equal = TRUE;
+    while (b) {
+        if (!Temp_ListInclude(a, b->head)) {
+            equal = FALSE;
+        }
+        b = b->tail;
+    }
+
+    return equal;
+}
+
 bool Temp_ListInclude(Temp_tempList body, Temp_temp item) {
-    assert(body);
-    if (!item) {
-        return 0;
+    if (!item || !body) {
+        return FALSE;
     }
 
     while (body) {
         if (Temp_equal(body->head, item)) {
-            return 1;
+            return TRUE;
         }
         body = body->tail;
     }
 
-    return 0;
+    return FALSE;
 }
 
+void Temp_TempSwap(Temp_temp a, Temp_temp b) {
+    Temp_temp tmp = a;
+    a = b;
+    b = tmp;
+}
+
+/* high to low */
+Temp_tempList Temp_ListSort(Temp_tempList list) {
+    Temp_tempList link = list;
+    Temp_tempList nlink = list;
+    while (link) {
+        nlink = link;
+
+        while (nlink && nlink->tail) {
+            if (!Temp_compare(nlink->head, nlink->tail->head)) {
+                Temp_TempSwap(nlink->head, nlink->tail->head);
+            }
+            nlink = nlink->tail;
+        }
+
+        link = link->tail;
+    }
+
+    return list;
+}
+
+Temp_tempList Temp_ListInsert(Temp_tempList list, Temp_temp item) {
+    Temp_tempList current_list = list;
+    Temp_tempList last_list = NULL;
+    while (current_list) {
+        if (Temp_compare(item, current_list->head)) {
+            current_list = Temp_TempList(item, current_list);
+            if (!last_list) {
+                return current_list;
+            } else {
+                last_list->tail = current_list;
+                return list;
+            }
+        }
+        last_list = current_list;
+        current_list = current_list->tail;
+    }
+
+    last_list->tail = Temp_TempList(item, NULL);
+    return list;
+}
+
+int Temp_ListLength(Temp_tempList list) {
+    int length = 0;
+    while (list && list->head) {
+        length ++;
+        list = list->tail;
+    }
+    return length;
+}
 /*
  * templsit += temp
+ * put item at top of the list
  */
 Temp_tempList Temp_ListAppend(Temp_tempList body, Temp_temp item) {
     if (Temp_ListInclude(body, item)) {
@@ -167,6 +246,9 @@ Temp_tempList Temp_ListExclude(Temp_tempList left, Temp_tempList right) {
  * templist = templist1 + templist2
  */
 Temp_tempList Temp_ListUnion(Temp_tempList left, Temp_tempList right) {
+    if (!left) {
+        return right;
+    }
     while (right) {
         left = Temp_ListAppend(left, right->head);
         right = right->tail;

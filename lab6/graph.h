@@ -21,6 +21,11 @@ G_node G_Node(G_graph g, void *info);
 /* Make a NodeList cell */
 G_nodeList G_NodeList(G_node head, G_nodeList tail);
 
+/* reverse order the nodelist */
+G_nodeList G_reverseNodeList(G_nodeList list);
+/* get the last node of a nodelist */
+G_node G_finalNode(G_nodeList list);
+
 /* get the last node of a graph */
 G_node G_lastNode(G_graph g);
 
@@ -29,6 +34,7 @@ G_nodeList G_nodes(G_graph g);
 
 /* Tell if "a" is in the list "l" */
 bool G_inNodeList(G_node a, G_nodeList l);
+bool G_inGraph(G_graph graph, G_node node);
 
 /* Make a new edge joining nodes "from" and "to", which must belong
     to the same graph */

@@ -23,4 +23,9 @@ Temp_temp Live_gtemp(G_node n);
 
 struct Live_graph Live_liveness(G_graph flow);
 
+void Live_setup_nodes(G_graph graph, Temp_tempList temps);
+void Live_setup_edges(G_node node, G_nodeList list);
+bool Live_inGraph(G_graph graph, Temp_temp temp);
+G_node Live_find_node(G_graph graph, Temp_temp temp);
+
 #endif

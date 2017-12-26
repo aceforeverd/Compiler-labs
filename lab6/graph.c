@@ -32,7 +32,7 @@ struct G_node_ {
     /*
      * extra info
      * a pointer to AS_instr in flowgraph.h
-     * or a temporary in interference graph
+     * or a temporary (list)? in interference graph
      */
     void *info;
 };
@@ -53,6 +53,22 @@ G_nodeList G_NodeList(G_node head, G_nodeList tail) {
     n->head = head;
     n->tail = tail;
     return n;
+}
+
+G_nodeList G_reverseNodeList(G_nodeList list) {
+    G_nodeList reverse_list = NULL;
+    while (list) {
+        reverse_list = G_NodeList(list->head, reverse_list);
+        list = list->tail;
+    }
+    return reverse_list;
+}
+
+G_node G_finalNode(G_nodeList list) {
+    while (list->tail) {
+        list = list->tail;
+    }
+    return list->head;
 }
 
 /* get the last node of a graph */
@@ -98,6 +114,10 @@ bool G_inNodeList(G_node a, G_nodeList l) {
     for (p = l; p != NULL; p = p->tail)
         if (p->head == a) return TRUE;
     return FALSE;
+}
+
+bool G_inGraph(G_graph graph, G_node node) {
+    return G_inNodeList(node, graph->mynodes);
 }
 
 /* add an edge */
@@ -207,6 +227,9 @@ static G_nodeList cat(G_nodeList a, G_nodeList b) {
  * predecessor lists of node n */
 G_nodeList G_adj(G_node n) { return cat(G_succ(n), G_pred(n)); }
 
+/*  get node info
+ *  AS_instr or templist
+ */
 void *G_nodeInfo(G_node n) { return n->info; }
 
 /* G_node table functions */

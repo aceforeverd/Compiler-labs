@@ -11,6 +11,7 @@
 
 static void enterLiveMap(G_table t, G_node flowNode, Temp_tempList temps);
 static Temp_tempList lookupLiveMap(G_table t, G_node flowNode);
+static Temp_tempList cal_node_outs(G_node node, G_table in_tmps);
 
 Live_moveList Live_MoveList(G_node src, G_node dst, Live_moveList tail) {
 	Live_moveList lm = (Live_moveList) checked_malloc(sizeof(*lm));
@@ -21,11 +22,59 @@ Live_moveList Live_MoveList(G_node src, G_node dst, Live_moveList tail) {
 }
 
 
+void Live_setup_nodes(G_graph graph, Temp_tempList temps) {
+    G_nodeList node_list = NULL;
+    while (temps) {
+        /* add nodes */
+        G_node node = Live_find_node(graph, temps->head);
+        if (!node) {
+            node = G_Node(graph, temps->head);
+        }
+        node_list = G_NodeList(node, node_list);
+        temps = temps->tail;
+    }
+
+    while (node_list) {
+        /* add edges */
+        Live_setup_edges(node_list->head, node_list->tail);
+        node_list = node_list->tail;
+    }
+}
+
+void Live_setup_edges(G_node node, G_nodeList list) {
+    while (list) {
+        /* addEdge will auto check if edge already exist */
+        G_addEdge(node, list->head);
+        list = list->tail;
+    }
+}
+
+bool Live_inGraph(G_graph graph, Temp_temp temp) {
+    G_nodeList node_list = G_nodes(graph);
+    while (node_list) {
+        if (Temp_equal(temp, (Temp_temp) G_nodeInfo(node_list->head))) {
+            return TRUE;
+        }
+        node_list = node_list->tail;
+    }
+    return FALSE;
+}
+
+G_node Live_find_node(G_graph graph, Temp_temp temp) {
+    G_nodeList node_list = G_nodes(graph);
+    while (node_list) {
+        if (Temp_equal(temp, (Temp_temp) G_nodeInfo(node_list->head))) {
+            return G_nodeInfo(node_list->head);
+        }
+        node_list = node_list->tail;
+    }
+    return NULL;
+}
 /*
  * what temporary variable is represent by n
  */
 Temp_temp Live_gtemp(G_node n) {
-    AS_instr instr = G_nodeInfo(n);
+    return (Temp_temp) G_nodeInfo(n);
 }
 
 /*
@@ -34,27 +83,82 @@ Temp_temp Live_gtemp(G_node n) {
  */
 struct Live_graph Live_liveness(G_graph flow) {
 	/* struct Live_graph lg; */
-    LiveGraph lg = (LiveGraph) checked_malloc(sizeof(*lg));
-    G_table def_tmps = G_empty();
-    G_table used_tmps = G_empty();
-    int length = G_grapthNodes(flow);
-    G_nodeList flowNodes = G_nodes(flow);
-    while (flowNodes && flowNodes->head) {
-        Temp_tempList list = FG_def(flowNodes->head);
-        if (list) {
-            enterLiveMap(def_tmps, flowNodes->head, list);
-        }
+    struct Live_graph lg;
+    lg.graph = G_Graph();
 
-        list = FG_use(flowNodes->head);
-        if (list) {
-            enterLiveMap(used_tmps, flowNodes->head, list);
-        }
+    G_table in_tmps = G_empty();
+    G_table out_tmps = G_empty();
 
-        flowNodes = flowNodes->tail;
+    G_nodeList flow_nodes = G_nodes(flow);
+
+    /*
+     * in[n] = use[n] U (out[n] - def[n])
+     * out[n] = SUM(in[s]) where s belong succ[n]
+     */
+    G_nodeList reverse_node_list = G_reverseNodeList(flow_nodes);
+    bool changed = TRUE;
+    G_nodeList current_list;
+    while (changed) {
+        changed = FALSE;
+        current_list = reverse_node_list;
+        while (current_list) {
+            G_node node = current_list->head;
+            Temp_tempList node_in_old = lookupLiveMap(in_tmps, node);
+            Temp_tempList node_out_old = lookupLiveMap(out_tmps, node);
+
+            Temp_tempList node_out = cal_node_outs(node, in_tmps);
+            Temp_tempList node_in = Temp_ListUnion(FG_use(node),
+                    Temp_ListExclude(node_out, FG_def(node)));
+
+            if (!Temp_ListEqual(node_in, node_in_old)) {
+                enterLiveMap(in_tmps, node, node_in);
+                changed = TRUE;
+            }
+            if (!Temp_ListEqual(node_out, node_out_old)) {
+                enterLiveMap(out_tmps, node, node_out);
+                changed = TRUE;
+            }
+
+            current_list = current_list->tail;
+        }
     }
 
+    current_list = reverse_node_list;
+    while (current_list) {
+        /* creating interference graph */
+        G_node node = current_list->head;
+        Temp_tempList node_ins = lookupLiveMap(in_tmps, node);
+        Temp_tempList node_outs = lookupLiveMap(out_tmps, node);
 
-	return *lg;
+        Live_setup_nodes(lg.graph, node_ins);
+        Live_setup_nodes(lg.graph, node_outs);
+
+        if (FG_isMove(node)) {
+            Temp_tempList move_src_list = FG_use(node);
+            Temp_tempList move_dst_list = FG_def(node);
+
+            assert(move_src_list->tail == NULL);
+            assert(move_dst_list->tail == NULL);
+
+            G_node move_src = Live_find_node(lg.graph, move_src_list->head);
+            G_node move_dst = Live_find_node(lg.graph, move_dst_list->head);
+
+            lg.moves = Live_MoveList(move_src, move_dst, lg.moves);
+        }
+
+        current_list = current_list->tail;
+    }
+
+	return lg;
+}
+
+Temp_tempList cal_node_outs(G_node node, G_table in_tmps) {
+    G_nodeList succ_nodes = G_succ(node);
+    Temp_tempList outs = NULL;
+    while (succ_nodes) {
+        outs = Temp_ListUnion(outs, lookupLiveMap(in_tmps, succ_nodes->head));
+    }
+    return outs;
 }
 
 

@@ -21,8 +21,14 @@ struct Temp_tempList_ {
 };
 Temp_tempList Temp_TempList(Temp_temp h, Temp_tempList t);
 Temp_tempList Temp_ListSplice(Temp_tempList left, Temp_tempList right);
+void Temp_TempSwap(Temp_temp a, Temp_temp b);
 bool Temp_equal(Temp_temp a, Temp_temp b);
+bool Temp_compare(Temp_temp a, Temp_temp b);
+bool Temp_ListEqual(Temp_tempList a, Temp_tempList b);
+int Temp_ListLength(Temp_tempList list);
 bool Temp_ListInclude(Temp_tempList body, Temp_temp item);
+Temp_tempList Temp_ListSort(Temp_tempList list);
+Temp_tempList Temp_ListInsert(Temp_tempList list, Temp_temp item);
 Temp_tempList Temp_ListAppend(Temp_tempList body, Temp_temp item);
 Temp_tempList Temp_ListExcludeTemp(Temp_tempList body, Temp_temp item);
 Temp_tempList Temp_ListExcludeTemp2(Temp_tempList body, Temp_temp item);
