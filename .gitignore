@@ -55,9 +55,8 @@ dkms.conf
 ._*
 lab2/lex.yy.c
 lab2/lextest
-.idea
+.idea/
 cmake-build-debug
-CMakeLists.txt
 a.out
 *.output
 y.tab.h
@@ -65,3 +64,4 @@ y.tab.c
 lex.yy.c
 .directory
 .undodir
+Session.vim
