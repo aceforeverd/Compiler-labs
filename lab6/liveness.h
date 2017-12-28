@@ -12,6 +12,7 @@ struct Live_moveList_ {
 };
 
 Live_moveList Live_MoveList(G_node src, G_node dst, Live_moveList tail);
+bool Live_move_related(Live_moveList move_list, G_node node);
 
 typedef struct Live_graph *LiveGraph;
 struct Live_graph {
@@ -25,7 +26,6 @@ struct Live_graph Live_liveness(G_graph flow);
 
 void Live_setup_nodes(G_graph graph, Temp_tempList temps);
 void Live_setup_edges(G_node node, G_nodeList list);
-bool Live_inGraph(G_graph graph, Temp_temp temp);
 G_node Live_find_node(G_graph graph, Temp_temp temp);
 
 #endif
