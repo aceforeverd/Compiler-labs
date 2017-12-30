@@ -58,7 +58,7 @@ struct expty transVar(S_table venv, S_table tenv, A_var v, Tr_level level, Temp_
                 EM_error(v->u.field.var->pos, "field %s doesn't exist", S_name(v->u.field.sym));
                 return expTy(NULL, Ty_Void());
             }
-            return expTy(Tr_fieldVar(t_var.exp, field_wrap->offset), field_wrap->field->ty);
+            return expTy(Tr_fieldVar(t_var.exp, field_wrap->offset * F_wordSize), field_wrap->field->ty);
         }
 
         case A_subscriptVar: {
@@ -136,25 +136,6 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level, Te
                 }
                 return expTy(Tr_opExp(oper, left.exp, right.exp), Ty_Int());
             }
-        }
-
-        case A_recordExp: {
-            Ty_ty record_ty = S_look(tenv, aExp->u.record.typ);
-            if (!record_ty) {
-                EM_error(aExp->pos, "undefined type %s", S_name(aExp->u.record.typ));
-                return expTy(NULL, Ty_Record(NULL));
-            }
-            if (record_ty->kind != Ty_record) {
-                EM_error(aExp->pos, "%s is not a record", S_name(aExp->u.record.typ));
-                return expTy(NULL, Ty_Name(aExp->u.record.typ, Ty_Record(record_ty->u.record)));
-            }
-
-            if (!aExp->u.record.fields && record_ty->u.record) {
-                EM_error(aExp->pos, "too less assign to record");
-            } else {
-                check_fields_match(venv, tenv, aExp->u.record.fields, record_ty->u.record, level);
-            }
-            return expTy(NULL, record_ty);
         }
 
         case A_seqExp: {
@@ -236,33 +217,38 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level, Te
             return expTy(Tr_whileExp(test_ty.exp, body_ty.exp), Ty_Void());
         }
 
-        case A_forExp: {
-            S_beginScope(venv);
-            S_enter(venv, aExp->u.forr.var, E_ROVarEntry(Tr_allocLocal(level, TRUE), Ty_Int()));
+        case A_forExp:
+        {
+            return transExp(venv, tenv, A_TryForToLetExp(aExp), level, label);
+            /*
+             * S_beginScope(venv);
+             * S_enter(venv, aExp->u.forr.var, E_ROVarEntry(Tr_allocLocal(level, TRUE), Ty_Int()));
 
-            expty_t exp1_ty = transExp(venv, tenv, aExp->u.forr.lo, level, label);
-            if (exp1_ty.ty->kind != Ty_int) {
-                EM_error(aExp->u.forr.lo->pos, "for exp's range type is not integer");
-            }
+             * expty_t exp1_ty = transExp(venv, tenv, aExp->u.forr.lo, level, label);
+             * if (exp1_ty.ty->kind != Ty_int) {
+             *     EM_error(aExp->u.forr.lo->pos, "for exp's range type is not integer");
+             * }
 
-            expty_t exp2_ty = transExp(venv, tenv, aExp->u.forr.hi, level, label);
-            if (exp2_ty.ty->kind != Ty_int) {
-                EM_error(aExp->u.forr.hi->pos, "for exp's range type is not integer");
-            }
+             * expty_t exp2_ty = transExp(venv, tenv, aExp->u.forr.hi, level, label);
+             * if (exp2_ty.ty->kind != Ty_int) {
+             *     EM_error(aExp->u.forr.hi->pos, "for exp's range type is not integer");
+             * }
 
-            expty_t exp3_ty = transExp(venv, tenv, aExp->u.forr.body, level, label);
-            if (exp3_ty.ty->kind != Ty_void) {
-                EM_error(aExp->u.forr.body->pos, "for loop body must return no value");
-            }
+             * expty_t exp3_ty = transExp(venv, tenv, aExp->u.forr.body, level, label);
+             * if (exp3_ty.ty->kind != Ty_void) {
+             *     EM_error(aExp->u.forr.body->pos, "for loop body must return no value");
+             * }
 
-            S_endScope(venv);
+             * S_endScope(venv);
 
-            // return transExp(venv, tenv, A_TryForToLetExp(aExp), level, label);
-            return expTy(NULL, Ty_Void());
+
+             * // return transExp(venv, tenv, A_TryForToLetExp(aExp), level, label);
+             * return expTy(NULL, Ty_Void());
+             */
         }
 
         case A_breakExp: {
-            return expTy(NULL, Ty_Void());
+            return expTy(Tr_breakExp(level), Ty_Void());
         }
 
         case A_letExp: {
@@ -270,7 +256,6 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level, Te
             A_decList d;
             S_beginScope(venv);
             S_beginScope(tenv);
-            Tr_exp exps = NULL;
             for (d = aExp->u.let.decs; d; d = d->tail) {
                 transDec(venv, tenv, d->head, level, label);
             }
@@ -278,8 +263,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level, Te
             S_endScope(tenv);
             S_endScope(venv);
 
-            Tr_letExp(exp.exp, level);
-            return exp;
+            return expTy(Tr_letExp(exp.exp, level), NULL);
         }
 
         case A_arrayExp: {
@@ -296,7 +280,33 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level, Te
             if (size_ty.ty->kind != Ty_int) {
                 EM_error(aExp->u.array.size->pos, "array size should be integer");
             }
-            return expTy(NULL, base_ty);
+            return expTy(Tr_arrayExp(size_ty.exp, array_ty.exp), base_ty);
+        }
+
+        case A_recordExp:
+        {
+            Ty_ty record_ty = S_look(tenv, aExp->u.record.typ);
+
+            if (!record_ty) {
+                EM_error(aExp->pos, "undefined type %s", S_name(aExp->u.record.typ));
+                return expTy(NULL, Ty_Record(NULL));
+            }
+            if (record_ty->kind != Ty_record) {
+                EM_error(aExp->pos, "%s is not a record", S_name(aExp->u.record.typ));
+                return expTy(NULL, Ty_Name(aExp->u.record.typ, Ty_Record(record_ty->u.record)));
+            }
+
+            Tr_expList expList;
+            if (!aExp->u.record.fields && record_ty->u.record) {
+                EM_error(aExp->pos, "too less assign to record");
+                expList = NULL;
+            } else {
+                expList = check_fields_match(aExp->pos, venv, tenv, aExp->u.record.fields, record_ty->u.record, level);
+            }
+
+            /* A_exp trExp = A_fieldToExp(aExp->pos, aExp->u.record.fields, aExp->u.record.typ); */
+            /* return transExp(venv, tenv, trExp, level, label); */
+            return expTy(Tr_recordExp(expList), record_ty);
         }
 
         case A_nilExp:
@@ -317,6 +327,8 @@ Tr_exp transDec(S_table venv, S_table tenv, A_dec dec, Tr_level level, Temp_labe
                         strlen(S_name(dec->u.var.typ)) == 0)
                     EM_error(dec->u.var.init->pos, "init should not be nil without type specified");
             }
+
+            Tr_access access = Tr_allocLocal(level, TRUE);
             if (dec->u.var.typ &&
                     strlen(S_name(dec->u.var.typ)) != 0) {
                 Ty_ty var_ty = S_look(tenv, dec->u.var.typ);
@@ -330,12 +342,12 @@ Tr_exp transDec(S_table venv, S_table tenv, A_dec dec, Tr_level level, Temp_labe
                     }
                 }
 
-                S_enter(venv, dec->u.var.var, E_VarEntry(Tr_allocLocal(level, TRUE), var_ty));
+                S_enter(venv, dec->u.var.var, E_VarEntry(access, var_ty));
             } else {
-                S_enter(venv, dec->u.var.var, E_VarEntry(Tr_allocLocal(level, TRUE), e.ty));
+                S_enter(venv, dec->u.var.var, E_VarEntry(access, e.ty));
             }
 
-            return Tr_varDec();
+            return Tr_varDec(access);
         }
 
         case A_typeDec: {
@@ -344,15 +356,17 @@ Tr_exp transDec(S_table venv, S_table tenv, A_dec dec, Tr_level level, Temp_labe
             if (checkTypeDecCircles(tenv, dec->u.type) == 1) {
                 EM_error(dec->pos, "illegal type cycle");
             }
-            return Tr_varDec();
+            return Tr_typeDec();
         }
         case A_functionDec: {
             transFunDecHeader(venv, tenv, dec->u.function, level);
-            transFunDecBody(venv, tenv, dec->u.function, level);
+            Tr_expList expList = transFunDecBody(venv, tenv, dec->u.function, level);
 
-            return Tr_varDec();
+            return Tr_funListDec(expList);
         }
     }
+
+    assert(0);
 }
 
 Ty_ty transTy(S_table tenv, A_ty a_ty)
@@ -424,44 +438,52 @@ Ty_tyList makeFormalTyList(S_table tenv, A_fieldList params)
 }
 
 
-void check_fields_match(S_table venv, S_table tenv,
+Tr_expList check_fields_match(int pos, S_table venv, S_table tenv,
                         A_efieldList args, Ty_fieldList standards,
-                        Tr_level level)
-{
+                        Tr_level level) {
     if (!args) {
-        return;
+        if (standards) {
+            EM_error(pos, "too less assign to record");
+        }
+        return NULL;
     }
 
-    if ( !standards) {
+    if (!standards) {
         EM_error(args->head->exp->pos, "too match assign to record");
-        return;
+        return NULL;
     }
 
-    A_efieldList e_list = args;
-    Ty_fieldList s_list = standards;
-    A_efield efield;
-    A_efield pos;
-    Ty_field field;
-    while (e_list && s_list) {
-        efield = e_list->head;
-        field = s_list->head;
+    Tr_exp tExp = check_field_match(venv, tenv, args->head, standards->head, level);
+    return Tr_ExpList(tExp, check_fields_match(args->head->exp->pos, venv, tenv,
+                args->tail, standards->tail, level));
 
-        check_field_match(venv, tenv, efield, field, level);
-        pos = efield;
+    /*
+     * A_efieldList e_list = args;
+     * Ty_fieldList s_list = standards;
+     * A_efield efield;
+     * A_efield poss;
+     * Ty_field field;
+     * while (e_list && s_list) {
+     *     efield = e_list->head;
+     *     field = s_list->head;
 
-        e_list = e_list->tail;
-        s_list = s_list->tail;
-    }
+     *     Tr_exp trExp = check_field_match(venv, tenv, efield, field, level);
+     *     pos = efield;
 
-    if (e_list) {
-        EM_error(e_list->head->exp->pos, "too match assign to record");
-    }
-    if (s_list) {
-        EM_error(pos->exp->pos, "too less assign to record");
-    }
+     *     e_list = e_list->tail;
+     *     s_list = s_list->tail;
+     * }
+
+     * if (e_list) {
+     *     EM_error(e_list->head->exp->pos, "too match assign to record");
+     * }
+     * if (s_list) {
+     *     EM_error(poss->exp->pos, "too less assign to record");
+     * }
+     */
 }
 
-void check_field_match(S_table venv, S_table tenv, A_efield ef, Ty_field tf, Tr_level level)
+Tr_exp check_field_match(S_table venv, S_table tenv, A_efield ef, Ty_field tf, Tr_level level)
 {
     if (ef->name != tf->name) {
         EM_error(ef->exp->pos, "field name not match declared");
@@ -472,9 +494,10 @@ void check_field_match(S_table venv, S_table tenv, A_efield ef, Ty_field tf, Tr_
         if (ef_ty.ty->kind == Ty_nil &&
                 real_ty(tenv, tf->ty)->kind == Ty_record) {
         } else {
-            // EM_error(ef->exp->pos, "assign exp value not match declared");
+            EM_error(ef->exp->pos, "assign exp value not match declared");
         }
     }
+    return ef_ty.exp;
 }
 
 void transTypeDecHeader(S_table venv, S_table tenv, A_nametyList types)
@@ -606,10 +629,10 @@ void transFunDecHeader(S_table venv, S_table tenv, A_fundecList fundecList,
     if (fun_entry != NULL && fun_entry->kind != E_funEntry) {
         EM_error(fundecList->head->pos, "two functions have the same name", fundecList->head->pos);
     } else {
-        Temp_label new_label = Temp_newlabel();
+        Temp_label func_name = Temp_namedlabel(S_name(fundecList->head->name));
         S_enter(venv, fundecList->head->name, E_FunEntry(
-                Tr_newLevel(level, new_label, paramsToEscapes(fundecList->head->params)),
-                new_label,
+                Tr_newLevel(level, func_name, paramsToEscapes(fundecList->head->params)),
+                func_name,
                 transFuncParams(tenv, fundecList->head->params),
                 result_ty
         ));
@@ -626,13 +649,13 @@ U_boolList paramsToEscapes(A_fieldList params) {
     return U_BoolList(TRUE, paramsToEscapes(params->tail));
 }
 
-void transFunDecBody(S_table venv, S_table tenv, A_fundecList fundecList, Tr_level level)
+Tr_expList transFunDecBody(S_table venv, S_table tenv, A_fundecList fundecList, Tr_level level)
 {
     /*
      * parse function body
      */
     if (fundecList == NULL) {
-        return;
+        return NULL;
     }
 
     Ty_tyList formalTys = transFuncParams(tenv, fundecList->head->params);
@@ -650,6 +673,7 @@ void transFunDecBody(S_table venv, S_table tenv, A_fundecList fundecList, Tr_lev
         EM_error(fundecList->head->pos, "function %s not declared\n", S_name(fundecList->head->name));
     }
     expty_t body_ty = transExp(venv, tenv, fundecList->head->body, fun_env->u.fun.level, fun_env->u.fun.label);
+
     if (fundecList->head->result &&
             strlen(S_name(fundecList->head->result))  != 0) {
         Ty_ty result_ty = S_look(tenv, fundecList->head->result);
@@ -664,9 +688,10 @@ void transFunDecBody(S_table venv, S_table tenv, A_fundecList fundecList, Tr_lev
 
     S_endScope(venv);
 
-    Tr_funDec(body_ty.exp, fun_env->u.fun.level);
+    Tr_exp func_exp = Tr_funDec(body_ty.exp, fun_env->u.fun.level);
 
-    transFunDecBody(venv, tenv, fundecList->tail, level);
+    return Tr_ExpList(func_exp,
+                      transFunDecBody(venv, tenv, fundecList->tail, level));
 }
 
 Ty_tyList transFuncParams(S_table tenv, A_fieldList params)
@@ -684,3 +709,4 @@ Ty_tyList transFuncParams(S_table tenv, A_fieldList params)
             transFuncParams(tenv, params->tail)
     );
 }
+

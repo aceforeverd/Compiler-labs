@@ -40,6 +40,8 @@ struct F_frag_ {
 
 F_frag F_StringFrag(Temp_label label, string str);
 F_frag F_ProcFrag(T_stm body, F_frame frame);
+F_frag F_string(Temp_label label, string str);
+F_frag F_newProgFrag(T_stm body, F_frame frame);
 
 
 typedef struct F_fragList_ *F_fragList;
@@ -51,12 +53,10 @@ struct F_fragList_ {
 F_fragList F_FragList(F_frag head, F_fragList tail);
 void F_FragListAppend(F_fragList list, F_frag item);
 
-Temp_temp F_FP();
 T_exp F_framePtr(F_frame f);
+T_exp F_preFrame(T_exp exp);
 T_exp F_preFramPtr(F_frame f);
 T_exp F_Exp(F_access acc, T_exp framePtr);
-// register of return value
-Temp_temp F_RV();
 
 F_frame F_newFrame(Temp_label name, U_boolList formals);
 Temp_label F_name(F_frame f);
@@ -71,9 +71,24 @@ AS_proc F_procEntryExit3(F_frame frame, AS_instrList body);
 
 F_frame outermost_frame();
 
+Temp_tempList F_registers();
+string F_getLabel(F_frame frame);
+
+Temp_temp F_FP();
+Temp_temp F_SP();
+Temp_temp F_ZERO();
+Temp_temp F_RA();
+Temp_temp F_RV();
+
 Temp_tempList CalleeSaves();
 /* return a list of temp that reserved by call function */
 Temp_tempList CallDefs();
 /* return a list of temps that reserved by MUL AND DIV */
 Temp_tempList MulDefs();
+
+Temp_map F_Temps();
+
+Temp_temp Temp_regLookup(string name);
+Temp_temp Temp_toTemp(string name);
+
 #endif

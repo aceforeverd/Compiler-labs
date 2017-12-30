@@ -1,20 +1,24 @@
-#include <stdio.h>
-#include "util.h"
-#include "symbol.h"
-#include "temp.h"
-#include "tree.h"
 #include "absyn.h"
-#include "assem.h"
-#include "frame.h"
+#include "color.h"
+#include "flowgraph.h"
 #include "graph.h"
 #include "liveness.h"
-#include "color.h"
 #include "regalloc.h"
+#include "symbol.h"
 #include "table.h"
-#include "flowgraph.h"
+#include "tree.h"
+#include "util.h"
+#include <stdio.h>
 
+/*! TODO: many tricks
+ *  \todo many tricks
+ */
 struct RA_result RA_regAlloc(F_frame f, AS_instrList il) {
-	//your code here
-	struct RA_result ret;
-	return ret;
+    G_graph graph = FG_AssemFlowGraph(il, f);
+    struct Live_graph lg = Live_liveness(graph);
+    struct COL_result color_result = COL_color(&lg, NULL, F_registers());
+    struct RA_result result;
+    result.coloring = color_result.coloring;
+    result.il = il;
+    return result;
 }

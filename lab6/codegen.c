@@ -77,45 +77,41 @@ static Temp_temp munchExp(T_exp e) {
     assert(e);
 
     char str[INSTLEN];
-    if (e->kind == T_MEM) {
-        return munchMemExp(e);
-    }
+    switch (e->kind) {
+        case T_MEM:
+            return munchMemExp(e);
+        case T_BINOP:
+            return munchBinExp(e);
+        case T_CONST:
+            {
+                Temp_temp r = Temp_newtemp();
+                sprintf(str, "%s `d0 <- `s0 + %d\n",AS_ADDI, e->u.CONST);
+                emit(AS_Oper(str, NULL, NULL, NULL));
+                return r;
+            }
+        case T_TEMP:
+            return e->u.TEMP;
+        case T_NAME:
+            {
+                sprintf(str, "%s: ", Temp_labelstring(e->u.NAME));
+                emit(AS_Label(str, e->u.NAME));
 
-    if (e->kind == T_BINOP) {
-        return munchBinExp(e);
-    }
+                /*! TODO: return need fix
+                */
+                return Temp_newtemp();
+            }
 
-    if (e->kind == T_CONST) {
-        Temp_temp r = Temp_newtemp();
-        sprintf(str, "%s `d0 <- `s0 + %d\n",AS_ADDI, e->u.CONST);
-        emit(AS_Oper(str, NULL, NULL, NULL));
-        return r;
-    }
+        case T_ESEQ:
+            munchStm(e->u.ESEQ.stm);
+            return munchExp(e->u.ESEQ.exp);
+        case T_CALL:
+            {
+                Temp_temp r = munchExp(e->u.CALL.fun);
+                Temp_tempList list = munchArgs(0, e->u.CALL.args);
+                sprintf(str, "%s `s0\n", AS_CALL);
+                emit(AS_Oper(str, CallDefs(), L(r, list), NULL));
+            }
 
-    if (e->kind == T_TEMP) {
-        return e->u.TEMP;
-    }
-
-    if (e->kind == T_NAME) {
-        sprintf(str, "%s: ", Temp_labelstring(e->u.NAME));
-        emit(AS_Label(str, e->u.NAME));
-
-        /*! TODO: return need fix
-         *  \todo need fix
-         */
-        return Temp_newtemp();
-    }
-
-    if (e->kind == T_ESEQ) {
-        munchStm(e->u.ESEQ.stm);
-        return munchExp(e->u.ESEQ.exp);
-    }
-
-    if (e->kind == T_CALL) {
-        Temp_temp r = munchExp(e->u.CALL.fun);
-        Temp_tempList list = munchArgs(0, e->u.CALL.args);
-        sprintf(str, "%s `s0\n", AS_CALL);
-        emit(AS_Oper(str, CallDefs(), L(r, list), NULL));
     }
 
     /* you can not touch here */
@@ -144,7 +140,7 @@ static void munchStm(T_stm stm) {
             munchExp(stm->u.EXP);
             return;
         case T_JUMP:
-            sprintf(instr, "%s `s0\n", AS_JMP);
+            sprintf(instr, "%s `j0\n", AS_JMP);
             emit(AS_Oper(instr, NULL, Temp_TempList(munchExp(stm->u.JUMP.exp), NULL),
                         AS_Targets(stm->u.JUMP.jumps)));
             return;

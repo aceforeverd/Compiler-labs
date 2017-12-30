@@ -41,7 +41,15 @@ bool G_inGraph(G_graph graph, G_node node);
 void G_addEdge(G_node from, G_node to);
 
 /* Delete the edge joining "from" and "to" */
+G_nodeList G_delete(G_node a, G_nodeList l);
 void G_rmEdge(G_node from, G_node to);
+
+/* remove a node from graph */
+void G_rmNode(G_node node);
+
+void G_addNode(G_node node);
+
+void G_rmNodeAndEdges(G_node node);
 
 /* Show all the nodes and edges in the graph, using the function "showInfo"
     to print the name of each node */
@@ -54,13 +62,14 @@ G_nodeList G_succ(G_node n);
 G_nodeList G_pred(G_node n);
 
 /* get number of the nodes in a graph */
-int G_grapthNodes(G_graph graph);
+int G_graphNodes(G_graph graph);
 
 /* Tell if there is an edge from "from" to "to" */
 bool G_goesTo(G_node from, G_node n);
 
 /* Tell how many edges lead to or from "n" */
 int G_degree(G_node n);
+int G_xDegree(G_node node);
 
 /* Get all the successors and predecessors of "n" */
 G_nodeList G_adj(G_node n);

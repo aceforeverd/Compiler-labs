@@ -51,7 +51,7 @@ bool FG_isMove(G_node n) {
 
 /*
  * generate control flow graph
- * ! TODO: to use F_frame
+ * TODO: to use F_frame
  * TODO: to support JMP
  */
 G_graph FG_AssemFlowGraph(AS_instrList il, F_frame f) {

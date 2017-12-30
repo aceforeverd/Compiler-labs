@@ -73,6 +73,15 @@ Ty_fieldList Ty_FieldList(Ty_field head, Ty_fieldList tail) {
     return p;
 }
 
+int Ty_fieldLength(Ty_fieldList list) {
+    int size = 0;
+    while (list->head) {
+        size ++;
+        list = list->tail;
+    }
+    return size;
+}
+
 Ty_field_wrap FieldList_lookup(Ty_fieldList list, S_symbol sym) {
     Ty_field field;
     Ty_fieldList ls = list;
@@ -89,7 +98,7 @@ Ty_field_wrap FieldList_lookup(Ty_fieldList list, S_symbol sym) {
         /*
          * assume every field take 4 bytes
          */
-        pos += 4;
+        pos += 1;
         ls = ls->tail;
     }
 

@@ -30,6 +30,7 @@ Tr_access Tr_allocLocal(Tr_level level, bool escape);
 void Tr_procEntryExit(Tr_level level, Tr_exp body, Tr_accessList formals);
 
 F_fragList Tr_getResult();
+void Tr_fragListAdd(F_frag frag);
 
 void Tr_init();
 
@@ -55,11 +56,23 @@ Tr_exp Tr_callExp(Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_
 
 Tr_exp Tr_letExp(Tr_exp body, Tr_level level);
 
-Tr_exp Tr_varDec();
+Tr_exp Tr_forExp(Tr_level level);
+
+Tr_exp Tr_breakExp(Tr_level level);
+
+Tr_exp Tr_arrayExp(Tr_exp init, Tr_exp type);
+
+Tr_exp Tr_recordExp(Tr_expList expList);
+T_stm Tr_recordInit(T_exp start, Tr_expList expList, int offset);
+
+Tr_exp Tr_varDec(Tr_access access);
+
+Tr_exp Tr_typeDec();
+
+Tr_exp Tr_funListDec(Tr_expList funcList);
 
 Tr_exp Tr_funDec(Tr_exp body, Tr_level level);
 
 Tr_exp Tr_nilExp();
 
-int *initArray(int size, int init_val);
 #endif

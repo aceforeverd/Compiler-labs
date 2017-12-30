@@ -17,7 +17,8 @@ struct binder_ {
     void *prevtop;
 };
 struct TAB_table_ {
-    binder table[TABSIZE]; void *top;
+    binder table[TABSIZE];
+    void *top;
 };
 
 static binder Binder(void *key, void *value, binder next, void *prevtop) {

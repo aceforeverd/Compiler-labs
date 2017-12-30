@@ -3,11 +3,13 @@
  *           abstract syntax rule.
  */
 
-#include "absyn.h" /* abstract syntax data structures */
-#include <stdio.h>
-#include <stdlib.h>
+#include "absyn.h"  /* abstract syntax data structures */
 #include "symbol.h" /* symbol table data structures */
 #include "util.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+
 A_var A_SimpleVar(A_pos pos, S_symbol sym) {
     A_var p = checked_malloc(sizeof(*p));
     p->kind = A_simpleVar;
@@ -158,9 +160,7 @@ A_exp A_LetExp(A_pos pos, A_decList decs, A_exp body) {
 }
 
 A_exp A_TryForToLetExp(A_exp exp) {
-    if (exp->kind != A_forExp) {
-        return exp;
-    }
+    assert(exp && exp->kind == A_forExp);
 
     int pos = exp->u.forr.body->pos;
     A_exp while_test = A_OpExp(exp->u.forr.hi->pos, A_leOp,
@@ -168,16 +168,14 @@ A_exp A_TryForToLetExp(A_exp exp) {
                                A_VarExp(exp->u.forr.hi->pos, A_SimpleVar(exp->u.forr.hi->pos, S_Symbol("limit"))));
     A_exp while_body = A_SeqExp(pos, A_ExpList(
             exp->u.forr.body,
-            A_ExpList(
-                    A_AssignExp(pos, A_SimpleVar(pos, exp->u.forr.var),
-                                A_OpExp(pos, A_plusOp, A_VarExp(pos, A_SimpleVar(pos, exp->u.forr.var)), A_IntExp(pos, 1))),
-                    NULL)
+            A_ExpList( A_AssignExp(pos, A_SimpleVar(pos, exp->u.forr.var),
+                    A_OpExp(pos, A_plusOp, A_VarExp(pos, A_SimpleVar(pos, exp->u.forr.var)), A_IntExp(pos, 1))), NULL)
     ));
 
-    return A_LetExp(exp->pos, A_DecList(A_VarDec(exp->u.forr.lo->pos, exp->u.forr.var, S_Symbol("int"), exp->u.forr.lo),
-                                        A_DecList(A_VarDec(exp->u.forr.lo->pos, S_Symbol("limit"), S_Symbol("int"), exp->u.forr.hi),
-                                                  NULL)
-    ), A_WhileExp(exp->u.forr.body->pos, while_test, while_body));
+    return A_LetExp(exp->pos,
+            A_DecList(A_VarDec(exp->u.forr.lo->pos, exp->u.forr.var, S_Symbol("int"), exp->u.forr.lo),
+                A_DecList(A_VarDec(exp->u.forr.lo->pos, S_Symbol("limit"), S_Symbol("int"), exp->u.forr.hi), NULL)),
+            A_WhileExp(exp->u.forr.body->pos, while_test, while_body));
 }
 
 A_exp A_ArrayExp(A_pos pos, S_symbol typ, A_exp size, A_exp init) {
@@ -315,4 +313,30 @@ A_efieldList A_EfieldList(A_efield head, A_efieldList tail) {
     p->head = head;
     p->tail = tail;
     return p;
+}
+
+A_exp A_fieldToExp(int pos, A_efieldList fields, S_symbol typ) {
+    A_var var = A_SimpleVar(pos, S_Symbol("simple_temp"));
+    int size = 0;
+    A_efieldList eList = fields;
+    while (eList && eList->head) {
+        size ++;
+        eList = eList->tail;
+    }
+
+    return A_LetExp(pos,
+            A_DecList(A_VarDec(pos, var->u.simple, typ, A_CallExp(pos, S_Symbol("allocRecord"),
+                        A_ExpList( A_IntExp(pos, size * 4), NULL
+                            ))), NULL),
+            A_SeqExp(pos, A_efieldListToExp(pos, var, fields)));
+}
+
+A_expList A_efieldListToExp(int pos, A_var var, A_efieldList fields) {
+    if (!fields) {
+        return A_ExpList(A_VarExp(pos, var), NULL);
+    }
+
+    return A_ExpList(
+        A_AssignExp(pos, A_FieldVar(pos, var, fields->head->name), fields->head->exp),
+        A_efieldListToExp(pos, var, fields->tail));
 }

@@ -93,15 +93,39 @@ bool Temp_ListEqual(Temp_tempList a, Temp_tempList b) {
     int l2 = Temp_ListLength(b);
     if (l1 != l2) return FALSE;
 
-    bool equal = TRUE;
     while (b) {
         if (!Temp_ListInclude(a, b->head)) {
-            equal = FALSE;
+            return FALSE;
         }
         b = b->tail;
     }
 
-    return equal;
+    return TRUE;
+}
+
+bool Temp_ListEqual_next(Temp_tempList a, Temp_tempList b) {
+    /*
+     * yet another implement of List Equal
+     * only for sorted list
+     */
+    if (!a && !b) return TRUE;
+    if (!a || !b) return FALSE;
+
+    int l1 = Temp_ListLength(a);
+    int l2 = Temp_ListLength(b);
+    if (l1 != l2) return FALSE;
+
+    while (a && b) {
+        if (!Temp_equal(a->head, b->head)) {
+            return FALSE;
+        }
+
+        a = a->tail;
+        a = b->tail;
+    }
+
+    if (a || b) return FALSE;
+    return TRUE;
 }
 
 bool Temp_ListInclude(Temp_tempList body, Temp_temp item) {
@@ -257,6 +281,9 @@ Temp_tempList Temp_ListUnion(Temp_tempList left, Temp_tempList right) {
 }
 
 struct Temp_map_ {
+    /* table
+     * link Temp_temp => real register name
+     */
     TAB_table tab;
     Temp_map under;
 };
@@ -271,10 +298,6 @@ Temp_map Temp_name(void) {
     return m;
 }
 
-int Temp_num(Temp_temp temp) {
-    return temp->num;
-}
-
 Temp_map newMap(TAB_table tab, Temp_map under) {
     Temp_map m = checked_malloc(sizeof(*m));
     m->tab = tab;
@@ -286,6 +309,7 @@ Temp_map Temp_empty(void) {
     return newMap(TAB_empty(), NULL);
 }
 
+/* link two Temp_map */
 Temp_map Temp_layerMap(Temp_map over, Temp_map under) {
     if (over == NULL)
         return under;
@@ -293,6 +317,10 @@ Temp_map Temp_layerMap(Temp_map over, Temp_map under) {
         return newMap(over->tab, Temp_layerMap(over->under, under));
 }
 
+/*
+ * t: Temp_temp
+ * s: register name
+ */
 void Temp_enter(Temp_map m, Temp_temp t, string s) {
     assert(m && m->tab);
     TAB_enter(m->tab, t, s);
@@ -330,4 +358,16 @@ void Temp_dumpMap(FILE *out, Temp_map m) {
         fprintf(out, "---------\n");
         Temp_dumpMap(out, m->under);
     }
+}
+
+int Temp_num(Temp_temp temp) {
+    return temp->num;
+}
+
+string Temp_toString(Temp_temp temp) {
+    assert(temp->num < 10);
+    char *str = (char *) malloc(2);
+    sprintf(str, "%d", temp->num);
+    str[1] = '\0';
+    return str;
 }

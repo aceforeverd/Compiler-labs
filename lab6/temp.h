@@ -25,6 +25,7 @@ void Temp_TempSwap(Temp_temp a, Temp_temp b);
 bool Temp_equal(Temp_temp a, Temp_temp b);
 bool Temp_compare(Temp_temp a, Temp_temp b);
 bool Temp_ListEqual(Temp_tempList a, Temp_tempList b);
+bool Temp_ListEqual_next(Temp_tempList a, Temp_tempList b);
 int Temp_ListLength(Temp_tempList list);
 bool Temp_ListInclude(Temp_tempList body, Temp_temp item);
 Temp_tempList Temp_ListSort(Temp_tempList list);
@@ -49,13 +50,14 @@ struct Temp_labelList_ {
 Temp_labelList Temp_LabelList(Temp_label h, Temp_labelList t);
 
 typedef struct Temp_map_ *Temp_map;
+Temp_map Temp_name(void);
 Temp_map Temp_empty(void);
 Temp_map Temp_layerMap(Temp_map over, Temp_map under);
 void Temp_enter(Temp_map m, Temp_temp t, string s);
 string Temp_look(Temp_map m, Temp_temp t);
 void Temp_dumpMap(FILE *out, Temp_map m);
 
-Temp_map Temp_name(void);
 int Temp_num(Temp_temp temp);
+string Temp_toString(Temp_temp temp);
 
 #endif

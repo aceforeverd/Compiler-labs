@@ -35,6 +35,11 @@ struct G_node_ {
      * or a temporary (list)? in interference graph
      */
     void *info;
+
+    /* degree in a undirected graph
+     * only useful in interference graph
+     */
+    /* int degree; */
 };
 
 /*
@@ -135,20 +140,79 @@ void G_addEdge(G_node from, G_node to) {
 
 /*
  * delete a node from NodeList L
+ * if a is in l, delete a from l
+ * else return l
  */
-static G_nodeList delete(G_node a, G_nodeList l) {
-    assert(a && l);
+G_nodeList G_delete(G_node a, G_nodeList l) {
+    assert(a);
+    if (!l) return NULL;
+
     if (a == l->head) {
         return l->tail;
     }
 
-    return G_NodeList(l->head, delete(a, l->tail));
+    return G_NodeList(l->head, G_delete(a, l->tail));
+}
+
+/* remove a node but no edge related in a graph */
+void G_rmNode(G_node node) {
+    assert(node && node->mygraph);
+    G_graph graph = node->mygraph;
+    graph->mynodes = G_delete(node, graph->mynodes);
+
+    /* update graph->mylast */
+    if (graph->mylast->head == node) {
+        G_nodeList node_list = graph->mynodes;
+        while (node_list->tail) {
+            node_list = node_list->tail;
+        }
+        graph->mylast = node_list;
+    }
+
+    graph->nodecount --;
+}
+
+/*
+ * add node back to its graph
+ *
+ */
+void G_addNode(G_node node) {
+    assert(node);
+
+    G_graph graph = node->mygraph;
+    if (G_inGraph(graph, node)) return;
+
+    G_nodeList list = G_NodeList(node, NULL);
+    if (graph->mylast) {
+        graph->mylast->tail = list;
+        graph->mylast = graph->mylast->tail;
+    } else {
+        graph->mylast = list;
+        graph->mynodes = graph->mylast;
+    }
+    graph->nodecount ++;
+}
+
+/* remove a node and all edges related in a graph */
+void G_rmNodeAndEdges(G_node node) {
+    G_rmNode(node);
+
+    G_nodeList preds = node->preds;
+    while (preds) {
+        G_rmEdge(preds->head, node);
+        preds = preds->tail;
+    }
+    G_nodeList succs = node->succs;
+    while (succs) {
+        G_rmEdge(node, succs->head);
+        succs = succs->tail;
+    }
 }
 
 void G_rmEdge(G_node from, G_node to) {
     assert(from && to);
-    to->preds = delete (from, to->preds);
-    from->succs = delete (to, from->succs);
+    to->preds = G_delete (from, to->preds);
+    from->succs = G_delete (to, from->succs);
 }
 
 /**
@@ -184,7 +248,7 @@ G_nodeList G_pred(G_node n) {
 }
 
 /* get number of the nodes in a graph */
-int G_grapthNodes(G_graph graph) {
+int G_graphNodes(G_graph graph) {
     return graph->nodecount;
 }
 
@@ -214,6 +278,24 @@ static int outDegree(G_node n) {
 }
 
 int G_degree(G_node n) { return inDegree(n) + outDegree(n); }
+
+/* return degree in a undirected graph
+ * only calculate succs
+ * some edges in the graph may not have corroding node
+ */
+int G_xDegree(G_node n) {
+    int degree = 0;
+    G_graph graph = n->mygraph;
+    G_nodeList graph_nodes = graph->mynodes;
+    G_nodeList p = G_pred(n);
+    while (p) {
+        if (G_inNodeList(p->head, graph_nodes)) {
+            degree ++;
+        }
+        p = p->tail;
+    }
+    return degree;
+}
 
 /* put list b at the back of list a and return the concatenated list */
 static G_nodeList cat(G_nodeList a, G_nodeList b) {

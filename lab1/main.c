@@ -2,10 +2,10 @@
  * Please don't modify this file.
 */
 
-#include <stdio.h>
-#include <assert.h>
-#include <stdlib.h>
 #include "prog1.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 int maxargs(A_stm stm);
 void interp(A_stm stm);
@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 			printf("args: %d\n",args);
 			interp(prog_prog());
 			break;
-		case 1: 
+		case 1:
 			printf("prog_prog\n");
 			args = maxargs(prog_prog());
 			printf("args: %d\n",args);

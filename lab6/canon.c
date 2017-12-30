@@ -169,10 +169,12 @@ static T_stmList linear(T_stm stm, T_stmList right) {
     return T_StmList(stm, right);
 }
 
-/* From an arbitrary Tree statement, produce a list of cleaned trees
+/*
+ * From an arbitrary Tree statement, produce a list of cleaned trees
    satisfying the following properties:
    1.  No SEQ's or ESEQ's
-   2.  The parent of every CALL is an EXP(..) or a MOVE(TEMP t,..) */
+   2.  The parent of every CALL is an EXP(..) or a MOVE(TEMP t,..)
+   */
 T_stmList C_linearize(T_stm stm) { return linear(do_stm(stm), NULL); }
 
 static C_stmListList StmListList(T_stmList head, C_stmListList tail) {

@@ -23,6 +23,7 @@ Live_moveList Live_MoveList(G_node src, G_node dst, Live_moveList tail) {
 
 bool Live_move_related(Live_moveList move_list, G_node node) {
     if (!node || !move_list) return FALSE;
+
     while (move_list) {
         if (node == move_list->src || node == move_list->dst) {
             return TRUE;
