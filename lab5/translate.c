@@ -128,11 +128,13 @@ static Tr_access Tr_Access(Tr_level level, F_access access) {
     return ta;
 }
 
-static Tr_accessList TrtoF_accessList(F_accessList list) {
-    return Tr_AccessList(
-
-            )
-}
+/*
+ * static Tr_accessList TrtoF_accessList(F_accessList list) {
+ *     return Tr_AccessList(
+ * 
+ *             )
+ * }
+ */
 
 static patchList PatchList(Temp_label *head, patchList tail) {
     patchList list;

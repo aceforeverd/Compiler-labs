@@ -51,6 +51,8 @@ AS_instrList AS_InstrList(AS_instr head, AS_instrList tail);
 AS_instrList AS_splice(AS_instrList a, AS_instrList b);
 void AS_printInstrList(FILE *out, AS_instrList iList, Temp_map m);
 
+void AS_printInstrList_x(FILE *out, AS_instrList iList, char *s);
+
 typedef struct AS_proc_ *AS_proc;
 struct AS_proc_ {
     string prolog;

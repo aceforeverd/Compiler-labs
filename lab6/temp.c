@@ -50,6 +50,13 @@ Temp_temp Temp_explicitTemp(int num) {
     Temp_temp temp = (Temp_temp) checked_malloc(sizeof(*temp));
 
     temp->num = num;
+    {
+        char name[16];
+        sprintf(name, "%d", temp->num);
+        if (!Temp_look(Temp_name(), temp)) {
+            Temp_enter(Temp_name(), temp, String(name));
+        }
+    }
 
     return temp;
 }

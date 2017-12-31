@@ -91,4 +91,6 @@ Temp_map F_Temps();
 Temp_temp Temp_regLookup(string name);
 Temp_temp Temp_toTemp(string name);
 
+void F_echoFrame(F_frame f);
+
 #endif

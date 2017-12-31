@@ -91,6 +91,14 @@ S_table E_base_venv(void) {
 
     S_enter(venv, S_Symbol("print"), E_FunEntry(level, label, formals, NULL));
 
+    S_enter(venv, S_Symbol("printi"), E_FunEntry(level, label, Ty_TyList(Ty_Int(), NULL), NULL));
+
+    S_enter(venv, S_Symbol("initArray"), E_FunEntry(
+                level, label, Ty_TyList(Ty_Int(), Ty_TyList(Ty_Int(), NULL)), Ty_Int()));
+
+    S_enter(venv, S_Symbol("allocRecord"), E_FunEntry(
+                level, label, Ty_TyList(Ty_Int(), NULL), Ty_Int()));
+
     result = Ty_Int();
     S_enter(venv, S_Symbol("ord"), E_FunEntry(level, label, formals, result));
 

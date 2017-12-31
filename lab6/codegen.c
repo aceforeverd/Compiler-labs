@@ -25,6 +25,7 @@ static char *AS_LOAD = "LOAD";
 static char *AS_JMP = "JMP";
 static char *AS_CALL = "CALL";
 static char *AS_UNKNOW = "UNKNOW";
+static char *AS_CMP = "CMP";
 
 
 /* a list of instructions */
@@ -93,12 +94,13 @@ static Temp_temp munchExp(T_exp e) {
             return e->u.TEMP;
         case T_NAME:
             {
-                sprintf(str, "%s: ", Temp_labelstring(e->u.NAME));
+                Temp_temp r = Temp_newtemp();
+                sprintf(str, "%s ", Temp_labelstring(e->u.NAME));
                 emit(AS_Label(str, e->u.NAME));
 
                 /*! TODO: return need fix
                 */
-                return Temp_newtemp();
+                return r;
             }
 
         case T_ESEQ:
@@ -110,8 +112,8 @@ static Temp_temp munchExp(T_exp e) {
                 Temp_tempList list = munchArgs(0, e->u.CALL.args);
                 sprintf(str, "%s `s0\n", AS_CALL);
                 emit(AS_Oper(str, CallDefs(), L(r, list), NULL));
+                return r;
             }
-
     }
 
     /* you can not touch here */
@@ -145,10 +147,39 @@ static void munchStm(T_stm stm) {
                         AS_Targets(stm->u.JUMP.jumps)));
             return;
         case T_CJUMP:
-            /*! TODO: not complete
-             */
-            munchExp(stm->u.CJUMP.left);
-            munchExp(stm->u.CJUMP.right);
+            {
+            Temp_temp left = munchExp(stm->u.CJUMP.left);
+            Temp_temp right = munchExp(stm->u.CJUMP.right);
+            sprintf(instr, "%s `s0, `s1\n", AS_CMP);
+            emit(AS_Oper(instr, NULL, L(left, L(right, NULL)), AS_Targets(NULL)));
+            char jmp_cmd[8];
+            switch (stm->u.CJUMP.op) {
+                case T_eq:
+                    strcpy(jmp_cmd, "je");
+                    break;
+                case T_ne:
+                    strcpy(jmp_cmd, "jne");
+                    break;
+                case T_lt:
+                    strcpy(jmp_cmd, "jl");
+                    break;
+                case T_gt:
+                    strcpy(jmp_cmd, "jg");
+                    break;
+                case T_le:
+                    strcpy(jmp_cmd, "jle");
+                    break;
+                case T_ge:
+                    strcpy(jmp_cmd, "jge");
+                    break;
+                default:
+                    assert(0);
+            }
+            sprintf(instr, "%s %s\n",jmp_cmd, Temp_labelstring(stm->u.CJUMP.true_l));
+            emit(AS_Oper(instr, NULL, NULL,
+                        AS_Targets(Temp_LabelList(stm->u.CJUMP.true_l, NULL))));
+            return ;
+            }
     }
 
     /* you can not touch here */

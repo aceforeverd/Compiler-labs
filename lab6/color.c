@@ -38,15 +38,20 @@ static string node_color(G_node node, Temp_map coloring);
 struct COL_result COL_color(LiveGraph lg, Temp_map initial,
                             Temp_tempList regs) {
     struct COL_result ret;
-    ret.coloring = initial;
+    ret.coloring = Temp_empty();
     ret.spills = NULL;
 
-    G_graph ig = lg->graph;
-    Live_moveList moves = lg->moves;
     int n_regs = Temp_ListLength(regs);
 
-    G_nodeList simplify_list = NULL;
-    COL_make_worklist(lg, &simplify_list, NULL, NULL, n_regs);
+    G_nodeList simplify_list ;
+    G_nodeList freeze_list ;
+    G_nodeList spill_list ;
+    COL_make_worklist(lg, &simplify_list, &freeze_list, &spill_list, n_regs);
+
+    if (G_NodeListLength(G_nodes(lg->graph)) <= 5) {
+        printf("simple coloring \n");
+        simple_assign_color(lg->graph, ret.coloring, regs);
+    }
 
     return ret;
 }
@@ -96,20 +101,22 @@ static void assign_color(G_graph graph, SelectStack sstack, Temp_map coloring,
     }
 }
 
-/* simple assign color, for node less or equal than 3 */
+/* simple assign color, for node less or equal than 5 */
 static void simple_assign_color(G_graph graph, Temp_map coloring, Temp_tempList reg) {
     G_nodeList node_list = G_nodes(graph);
     int node_num = G_graphNodes(graph);
-    assert(node_num <= 3);
-    assert(Temp_ListLength(reg) >= 4);
+    printf("node num %d\n", node_num);
 
     G_node node;
-    int i;
-    for (i = 0; i < node_num; i++) {
+    int i = 0;
+    while (node_list && reg) {
         node = node_list->head;
-        string registe = Temp_toString(reg->head);
+        string registe = Temp_look(F_Temps(), reg->head);
+        printf("reg is %d\t", Temp_num(reg->head));
         Temp_enter(coloring, (Temp_temp) G_nodeInfo(node), registe);
+        printf("entered %s\n", registe);
 
+        i ++;
         reg = reg->tail;
         node_list = node_list->tail;
     }
@@ -160,13 +167,23 @@ static void SelectSpill(G_graph ig, SelectStack *sstack, int K) {
 
 static void COL_make_worklist(LiveGraph lg, G_nodeList *simplify_list,
                               G_nodeList *freeze_list, G_nodeList *spill_list, int n_regs) {
+    *simplify_list = NULL;
+    *freeze_list = NULL;
+    *spill_list = NULL;
+
     G_nodeList node_list = G_nodes(lg->graph);
 
     while (node_list) {
-        if (G_xDegree(node_list->head) > n_regs &&
-                !Live_move_related(lg->moves, node_list->head)) {
+        int degree = G_xDegree(node_list->head);
+        if (degree >= n_regs) {
+            *spill_list = G_NodeList(node_list->head, *spill_list);
+            /* G_rmNode(node_list->head); */
+        } else if (Live_move_related(lg->moves, node_list->head)) {
+            *freeze_list = G_NodeList(node_list->head, *freeze_list);
+            /* G_rmNode(node_list->head); */
+        } else {
             *simplify_list = G_NodeList(node_list->head, *simplify_list);
-            G_rmNode(node_list->head);
+            /* G_rmNode(node_list->head); */
         }
         node_list = node_list->tail;
     }

@@ -46,6 +46,8 @@ Tr_exp Tr_intExp(int var);
 
 Tr_exp Tr_stringExp(string str);
 
+Tr_exp Tr_assignExp(Tr_exp var, Tr_exp exp);
+
 Tr_exp Tr_opExp(A_oper op, Tr_exp left, Tr_exp right);
 
 Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp els, Tr_level level);

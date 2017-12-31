@@ -290,8 +290,7 @@ Tr_level Tr_outermost(void) {
 }
 
 Tr_level Tr_newLevel(Tr_level parent, Temp_label name, U_boolList formals) {
-    return Tr_Level(F_newFrame(name, U_BoolList(TRUE, formals)),
-                    parent);
+    return Tr_Level(F_newFrame(name, formals), parent);
 }
 
 Tr_accessList Tr_formals(Tr_level level) {
@@ -318,7 +317,7 @@ void Tr_init() {
     outermost_level.frame = outermost_frame();
     outermost_level.parent = NULL;
 
-    a_fraglist = F_FragList(F_ProcFrag(NULL, outermost_level.frame), NULL);
+    /* a_fraglist = F_FragList(F_ProcFrag(NULL, outermost_level.frame), NULL); */
 }
 
 /* @declared_access: Tr_access of decalcification
@@ -363,6 +362,10 @@ Tr_exp Tr_stringExp(string str) {
     Tr_fragListAdd(F_StringFrag(label, str));
 
     return Tr_Ex(T_Name(label));
+}
+
+Tr_exp Tr_assignExp(Tr_exp var, Tr_exp exp) {
+    return Tr_Nx(T_Move(unEx(var), unEx(exp)));
 }
 
 Tr_exp Tr_opExp(A_oper op, Tr_exp left, Tr_exp right) {
@@ -441,14 +444,18 @@ Tr_exp Tr_callExp(Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_
     /* one more argument, static link */
     T_exp fp = follow_static_link(call_level, dec_level);
 
-    return Tr_Ex(T_Call( T_Name(label),
-            T_ExpList(fp, unExList(args))));
+    if (fp) {
+        return Tr_Ex(T_Call(T_Name(label),
+                    T_ExpList(fp, unExList(args))));
+    }
+
+    return Tr_Ex(F_externalCall(S_name(label), unExList(args)));
 }
 
 Tr_exp Tr_letExp(Tr_exp body, Tr_level level) {
     Tr_fragListAdd(F_ProcFrag(unNx(body), level->frame));
 
-    return Tr_Nx(unNx(body));
+    return body;
 }
 
 Tr_exp Tr_fieldVar(Tr_exp var, int order) {

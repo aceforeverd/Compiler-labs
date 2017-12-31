@@ -65,3 +65,6 @@ lex.yy.c
 .directory
 .undodir
 Session.vim
+*.swp
+*.s
+testcases/

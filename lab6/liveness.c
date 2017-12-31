@@ -46,7 +46,7 @@ void Live_setup_nodes(G_graph graph, Temp_tempList temps) {
         temps = temps->tail;
     }
 
-    while (node_list) {
+    while (node_list && node_list->head) {
         /* add edges(undirected/double directed) */
         Live_setup_edges(node_list->head, node_list->tail);
         node_list = node_list->tail;
@@ -132,6 +132,7 @@ struct Live_graph Live_liveness(G_graph flow) {
         }
     }
 
+
     current_list = reverse_node_list;
     while (current_list) {
         /* creating interference graph */
@@ -166,6 +167,7 @@ Temp_tempList calc_node_outs(G_node node, G_table in_tmps) {
     Temp_tempList outs = NULL;
     while (succ_nodes) {
         outs = Temp_ListUnion(outs, lookupLiveMap(in_tmps, succ_nodes->head));
+        succ_nodes = succ_nodes->tail;
     }
     return outs;
 }

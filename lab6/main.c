@@ -63,20 +63,20 @@ static void doProc(FILE *out, F_frame frame, T_stm body) {
     printf("-------====trace=====-----\n");*/
     iList = F_codegen(frame, stmList); /* 9 */
 
-    AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name()));
-    printf("----======before RA=======-----\n");
+    /* AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name())); */
+    /* printf("----======before RA=======-----\n"); */
 
     // G_graph fg = FG_AssemFlowGraph(iList);  /* 10.1 */
     struct RA_result ra = RA_regAlloc(frame, iList); /* 11 */
 
-    fprintf(out, "BEGIN function\n");
-    AS_printInstrList(out, proc->body, Temp_layerMap(F_tempMap, ra.coloring));
-    fprintf(out, "END function\n");
+    /* fprintf(out, "BEGIN function\n"); */
+    /* AS_printInstrList(out, proc->body, Temp_layerMap(F_tempMap, ra.coloring)); */
+    /* fprintf(out, "END function\n"); */
 
     // Part of TA's implementation. Just for reference.
-    /*
-    AS_rewrite(ra.il, Temp_layerMap(F_tempMap, ra.coloring));
-    proc =	F_procEntryExit3(frame, ra.il);
+    /* AS_rewrite(ra.il, Temp_layerMap(F_tempMap, ra.coloring)); */
+    /* proc =	F_procEntryExit3(frame, ra.il); */
+    proc = F_procEntryExit3(frame, iList);
 
     string procName = S_name(F_name(frame));
     fprintf(out, ".text\n");
@@ -92,7 +92,6 @@ static void doProc(FILE *out, F_frame frame, T_stm body) {
                           Temp_layerMap(F_tempMap, ra.coloring));
     fprintf(out, "%s", proc->epilog);
     //fprintf(out, "END %s\n\n", Temp_labelstring(F_name(frame)));
-    */
 }
 
 void doStr(FILE *out, Temp_label label, string str) {
@@ -134,7 +133,9 @@ int main(int argc, string *argv) {
         // Esc_findEscape(absyn_root); /* set varDec's escape field */
 
         frags = SEM_transProg(absyn_root);
-        if (anyErrors) return 1; /* don't continue */
+        if (anyErrors) {
+            return 1; /* don't continue */
+        }
 
         /* convert the filename */
         sprintf(outfile, "%s.s", argv[1]);
@@ -142,9 +143,11 @@ int main(int argc, string *argv) {
         /* Chapter 8, 9, 10, 11 & 12 */
         for (; frags; frags = frags->tail)
             if (frags->head->kind == F_procFrag) {
+                /* put procFrag into file */
                 doProc(out, frags->head->u.proc.frame,
                        frags->head->u.proc.body);
             } else if (frags->head->kind == F_stringFrag)
+                /* put stringFrag into file */
                 doStr(out, frags->head->u.stringg.label,
                       frags->head->u.stringg.str);
 

@@ -20,7 +20,7 @@ static char *EDI = "%edi";
 static char *ESP = "%esp";
 static char *EBP = "%ebp";
 
-const int SL_OFFSET = 0;
+const int SL_OFFSET = 8;
 // frame pointer
 #define REG_EAX 1
 #define REG_EBX 2
@@ -40,6 +40,8 @@ const int REG_MUL_HIGH = REG_EDX;
 const int REG_MUL_LOW = REG_EAX;
 const int REG_ZERO = 26;
 
+static F_accessList F_buildAccessList(int pos, U_boolList formals);
+
 // varibales
 struct F_access_ {
     enum { inFrame, inReg } kind;
@@ -54,22 +56,13 @@ struct F_frame_ {
     unsigned int n_inFrame;
     /* name of the frame */
     Temp_label name;
-    // location of frame pointer in frame stack
-
-    /*
-     * the frame pointer
-     * should be stored in a special register
-     * usually ebp
-     *
-     * T_Temp()
-     */
-    T_exp fp;
 
     U_boolList formals;
+    /* ebp + static link + params */
     F_accessList formals_list;
 };
 
-static struct F_frame_ root_frame = {0, 0, NULL, NULL, NULL, NULL};
+static struct F_frame_ root_frame = {0, 0, NULL, NULL, NULL};
 
 static F_accessList F_AccessList(F_access head, F_accessList tail);
 static F_accessList F_gen_formals(F_frame frame, U_boolList boolList);
@@ -111,6 +104,7 @@ F_frag F_newProgFrag(T_stm body, F_frame frame) {
 
 }
 
+
 F_fragList F_FragList(F_frag head, F_fragList tail) {
     F_fragList a_fragList = checked_malloc(sizeof(*a_fragList));
 
@@ -135,7 +129,7 @@ void F_FragListAppend(F_fragList list, F_frag item) {
  */
 T_exp F_framePtr(F_frame f) {
     assert(f);
-    return f->fp;
+    return T_Temp(Temp_explicitTemp(REG_EBP));
 }
 
 /* exp is the current positon of frame pointer */
@@ -147,7 +141,8 @@ T_exp F_preFrame(T_exp exp) {
  * return previous frame pointer
  */
 T_exp F_preFramPtr(F_frame f) {
-    return F_preFrame(F_framePtr(f));
+    /* return T_Mem(T_Binop( T_plus, T_Temp(Temp_explicitTemp(REG_EBP)), T_Const(SL_OFFSET))); */
+    return F_Exp(f->formals_list->head, F_framePtr(f));
 }
 
 /*
@@ -162,12 +157,19 @@ T_exp F_Exp(F_access acc, T_exp framePtr) {
     }
 }
 
+static F_accessList F_buildAccessList(int pos, U_boolList formals) {
+    if (!formals) {
+        return NULL;
+    }
+    return F_AccessList(InFrame(pos), F_buildAccessList(pos + 4, formals->tail));
+}
+
 F_frame F_newFrame(Temp_label name, U_boolList formals) {
     F_frame frame = checked_malloc(sizeof(*frame));
 
     frame->name = name;
     frame->formals = formals;
-    frame->fp = T_Temp(F_FP());
+    frame->formals_list = F_buildAccessList(SL_OFFSET, formals);
     frame->n_locals = 0;
     frame->n_inFrame = 0;
 
@@ -179,7 +181,7 @@ Temp_label F_name(F_frame f) {
 }
 
 F_accessList F_formals(F_frame f) {
-    return F_gen_formals(f, f->formals);
+    return f->formals_list;
 }
 
 static F_accessList F_gen_formals(F_frame frame, U_boolList boolList) {
@@ -199,7 +201,7 @@ F_access F_allocLocal(F_frame f, bool escape) {
     } else {
         f->n_locals ++;
         f->n_inFrame ++;
-        return InFrame(F_wordSize * (1 - f->n_inFrame));
+        return InFrame(F_wordSize * (0 - f->n_inFrame));
     }
 }
 
@@ -250,9 +252,14 @@ AS_instrList F_procEntryExit2(AS_instrList body) {
 }
 
 AS_proc F_procEntryExit3(F_frame frame, AS_instrList body) {
-    char buf[100];
-    sprintf(buf, "PROCEDURE %s\n", S_name(frame->name));
-    return AS_Proc(String(buf), body, "END\n");
+    char buf[128];
+    sprintf(buf, "%s pushl %%ebp\n movl %%esp, %%ebp\n subl $128, %%ebp\n", S_name(frame->name));
+
+    AS_proc proc = checked_malloc(sizeof(*proc));
+    proc->epilog = "pop %%ebp\nret\n";
+    proc->body = body;
+    proc->prolog = buf;
+    return proc;
 }
 
 /* frame pointer */
@@ -311,16 +318,19 @@ Temp_tempList F_registers() {
 }
 
 Temp_map F_Temps() {
-    F_tempMap = Temp_empty();
-    Temp_enter(F_tempMap, Temp_explicitTemp(REG_EAX), EAX);
-    Temp_enter(F_tempMap, Temp_explicitTemp(REG_EBX), EBX);
-    Temp_enter(F_tempMap, Temp_explicitTemp(REG_ECX), ECX);
-    Temp_enter(F_tempMap, Temp_explicitTemp(REG_EDX), EDX);
-    Temp_enter(F_tempMap, Temp_explicitTemp(REG_ESI), ESI);
-    Temp_enter(F_tempMap, Temp_explicitTemp(REG_EDI), EDI);
-    Temp_enter(F_tempMap, Temp_explicitTemp(REG_ESP), ESP);
-    Temp_enter(F_tempMap, Temp_explicitTemp(REG_EBP), EBP);
-    return F_tempMap;
+    static Temp_map F_ntempMap;
+    if (!F_ntempMap) {
+        F_ntempMap = Temp_empty();
+        Temp_enter(F_ntempMap, Temp_explicitTemp(REG_EAX), EAX);
+        Temp_enter(F_ntempMap, Temp_explicitTemp(REG_EBX), EBX);
+        Temp_enter(F_ntempMap, Temp_explicitTemp(REG_ECX), ECX);
+        Temp_enter(F_ntempMap, Temp_explicitTemp(REG_EDX), EDX);
+        Temp_enter(F_ntempMap, Temp_explicitTemp(REG_ESI), ESI);
+        Temp_enter(F_ntempMap, Temp_explicitTemp(REG_EDI), EDI);
+        Temp_enter(F_ntempMap, Temp_explicitTemp(REG_ESP), ESP);
+        Temp_enter(F_ntempMap, Temp_explicitTemp(REG_EBP), EBP);
+    }
+    return F_ntempMap;
 }
 
 Temp_temp Temp_regLookup(string name) {
@@ -348,4 +358,9 @@ Temp_temp Temp_toTemp(string name) {
     int num = atoi(name);
     assert(num < 10);
     return Temp_explicitTemp(num);
+}
+
+void F_echoFrame(F_frame f) {
+    assert(f);
+    printf("name => %s\n", S_name(f->name));
 }

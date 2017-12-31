@@ -9,6 +9,7 @@
 #include "env.h"
 #include "semant.h"
 #include "helper.h"
+#include "printtree.h"
 #include "translate.h"
 
 /*Lab5: Your implementation of lab4*/
@@ -174,7 +175,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level, Te
                 EM_error(aExp->u.assign.exp->pos, "unmatched assign exp");
             }
 
-            return expTy(NULL, Ty_Void());
+            return expTy(Tr_assignExp(var_ty.exp, exp_ty.exp), Ty_Void());
         }
 
         case A_ifExp: {
@@ -311,9 +312,8 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level, Te
 
         case A_nilExp:
             return expTy(Tr_nilExp(), Ty_Nil());
-        default:
-            return expTy(NULL, Ty_Void());
 
+        assert(0);
     }
 }
 
@@ -417,7 +417,7 @@ Tr_expList check_function_params(S_table venv, S_table tenv, int pos,
 
     expty_t ty = transExp(venv, tenv, args->head, level, label);
     if (ty.ty->kind != standards->head->kind) {
-        // EM_error(args->head->pos, "para type mismatch");
+        EM_error(args->head->pos, "para type mismatch");
     }
 
     return Tr_ExpList(ty.exp, check_function_params(venv, tenv, args->head->pos,

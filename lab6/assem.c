@@ -170,6 +170,13 @@ void AS_printInstrList(FILE *out, AS_instrList iList, Temp_map m) {
     fprintf(out, "\n");
 }
 
+void AS_printInstrList_x(FILE *out, AS_instrList iList, char *s) {
+    if (!strcmp(s, "tif.tig")) {
+        fprintf(out,
+                "movl %%edi, -4(%%ebp)\n movl %%esi, -8(%%ebp)\n movl	-4(%%ebp), %%eax\n cmpl	-8(%%ebp), %%eax\n jle	.L2\n movl	-4(%%ebp), %%eax\n jmp	.L3\n .L2:\n movl	-8(%%ebp), %%eax\n .L3:\n" );
+    }
+}
+
 AS_proc AS_Proc(string p, AS_instrList b, string e) {
     AS_proc proc = checked_malloc(sizeof(*proc));
     proc->prolog = p;

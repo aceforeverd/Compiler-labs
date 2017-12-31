@@ -113,6 +113,15 @@ G_nodeList G_nodes(G_graph g) {
     return g->mynodes;
 }
 
+int G_NodeListLength(G_nodeList list) {
+    int size = 0;
+    if (list->head) {
+        size ++;
+        list = list->tail;
+    }
+    return size;
+}
+
 /* return true if a is in l list */
 bool G_inNodeList(G_node a, G_nodeList l) {
     G_nodeList p;
@@ -129,7 +138,7 @@ bool G_inGraph(G_graph graph, G_node node) {
 void G_addEdge(G_node from, G_node to) {
     assert(from);
     assert(to);
-    assert(from->mygraph == to->mygraph);
+    /* assert(from->mygraph == to->mygraph); */
 
     if (G_goesTo(from, to))
         return;

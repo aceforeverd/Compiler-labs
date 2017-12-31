@@ -9,10 +9,10 @@
 #include "tree.h"
 #include "util.h"
 
-/* local function prototype */
-static void pr_tree_exp(FILE *out, T_exp exp, int d);
 
-static void indent(FILE *out, int d) {
+/* local function prototype */
+
+void indent(FILE *out, int d) {
     int i;
     for (i = 0; i <= d; i++) fprintf(out, " ");
 }
@@ -23,7 +23,7 @@ static char bin_oper[][12] = {"PLUS", "MINUS",  "TIMES",  "DIVIDE",  "AND",
 static char rel_oper[][12] = {"EQ", "NE",  "LT",  "GT",  "LE",
                               "GE", "ULT", "ULE", "UGT", "UGE"};
 
-static void pr_stm(FILE *out, T_stm stm, int d) {
+void pr_stm(FILE *out, T_stm stm, int d) {
     switch (stm->kind) {
         case T_SEQ:
             indent(out, d);
@@ -72,7 +72,7 @@ static void pr_stm(FILE *out, T_stm stm, int d) {
     }
 }
 
-static void pr_tree_exp(FILE *out, T_exp exp, int d) {
+void pr_tree_exp(FILE *out, T_exp exp, int d) {
     switch (exp->kind) {
         case T_BINOP:
             indent(out, d);
@@ -128,5 +128,21 @@ void printStmList(FILE *out, T_stmList stmList) {
     for (; stmList; stmList = stmList->tail) {
         pr_stm(out, stmList->head, 0);
         fprintf(out, "\n");
+    }
+}
+
+void F_echoFrag(F_frag frag) {
+    if (!frag) return;
+    switch(frag->kind) {
+        case F_stringFrag:
+            printf("stringFrag: label => %s, str => %s\n",
+                    S_name(frag->u.stringg.label), frag->u.stringg.str);
+            return;
+        case F_procFrag:
+            printf("procFrag: body => ");
+            pr_stm(stdout, frag->u.proc.body, 4);
+            printf(", frame => ");
+            F_echoFrame(frag->u.proc.frame);
+            return ;
     }
 }
