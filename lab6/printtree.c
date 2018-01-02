@@ -102,6 +102,7 @@ void pr_tree_exp(FILE *out, T_exp exp, int d) {
             fprintf(out, ")");
             break;
         case T_NAME:
+            assert(exp->u.NAME);
             indent(out, d);
             fprintf(out, "NAME %s", S_name(exp->u.NAME));
             break;
@@ -144,5 +145,12 @@ void F_echoFrag(F_frag frag) {
             printf(", frame => ");
             F_echoFrame(frag->u.proc.frame);
             return ;
+    }
+}
+
+void F_echoFragList(F_fragList list) {
+    while (list) {
+        F_echoFrag(list->head);
+        list = list->tail;
     }
 }

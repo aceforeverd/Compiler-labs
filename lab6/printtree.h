@@ -14,5 +14,7 @@ void pr_tree_exp(FILE *out, T_exp exp, int d);
 
 void pr_stm(FILE *out, T_stm stm, int d);
 
+void F_echoFragList(F_fragList list);
+
 #endif
 

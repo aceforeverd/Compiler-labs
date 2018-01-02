@@ -54,6 +54,8 @@ Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp els, Tr_level level);
 
 Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body);
 
+Tr_exp Tr_seqExp(Tr_expList expList);
+
 Tr_exp Tr_callExp(Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_expList args);
 
 Tr_exp Tr_letExp(Tr_exp body, Tr_level level);

@@ -55,7 +55,7 @@ void F_FragListAppend(F_fragList list, F_frag item);
 
 T_exp F_framePtr(F_frame f);
 T_exp F_preFrame(T_exp exp);
-T_exp F_preFramPtr(F_frame f);
+T_exp F_preFramePtr(F_frame f);
 T_exp F_Exp(F_access acc, T_exp framePtr);
 
 F_frame F_newFrame(Temp_label name, U_boolList formals);

@@ -63,8 +63,8 @@ static void doProc(FILE *out, F_frame frame, T_stm body) {
     printf("-------====trace=====-----\n");*/
     iList = F_codegen(frame, stmList); /* 9 */
 
-    /* AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name())); */
-    /* printf("----======before RA=======-----\n"); */
+    AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name()));
+    printf("----======before RA=======-----\n");
 
     // G_graph fg = FG_AssemFlowGraph(iList);  /* 10.1 */
     struct RA_result ra = RA_regAlloc(frame, iList); /* 11 */
@@ -132,7 +132,12 @@ int main(int argc, string *argv) {
         // If you have implemented escape analysis, uncomment this
         // Esc_findEscape(absyn_root); /* set varDec's escape field */
 
+        pr_exp(stdout, absyn_root, 4);
+
         frags = SEM_transProg(absyn_root);
+        printf("pass SEM_transProg\n");
+        F_echoFragList(frags);
+
         if (anyErrors) {
             return 1; /* don't continue */
         }

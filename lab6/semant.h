@@ -43,5 +43,8 @@ Ty_tyList transFuncParams(S_table tenv, A_fieldList params);
 
 int checkTypeDecCircles(S_table tenv, A_nametyList types);
 int checkTypeDecCircle(S_table tenv, A_namety type, int max_num);
+
+Tr_expList transSeqExp(S_table venv, S_table tenv, A_expList list, Tr_level level, Temp_label label, Ty_ty *type);
+
 #endif
 

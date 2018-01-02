@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define DEBUG 1
+
 
 struct Tr_access_ {
     Tr_level level;
@@ -72,7 +74,7 @@ static F_fragList fragList_tail = NULL;
 static Tr_exp Tr_Ex(T_exp ex);
 static Tr_exp Tr_Nx(T_stm nx);
 static Tr_exp Tr_Cx(patchList trues, patchList falses, T_stm stm);
-
+static T_exp expList_to_Eseq(Tr_expList expList);
 static Tr_access Tr_Access(Tr_level level, F_access access);
 Tr_level Tr_Level(F_frame f, Tr_level l);
 void doPatch(patchList tList, Temp_label label);
@@ -324,8 +326,9 @@ void Tr_init() {
  * @call_level: Tr_level of invocation
  */
 Tr_exp Tr_simpleVar(Tr_access declared_access, Tr_level call_level) {
-    return Tr_Ex(F_Exp(declared_access->access,
-                       follow_static_link(call_level, declared_access->level)));
+    T_exp dec_exp = follow_static_link(call_level, declared_access->level);
+    assert(dec_exp);
+    return Tr_Ex(F_Exp(declared_access->access, dec_exp));
 }
 
 /*
@@ -334,12 +337,19 @@ Tr_exp Tr_simpleVar(Tr_access declared_access, Tr_level call_level) {
  */
 T_exp follow_static_link(Tr_level call_level, Tr_level dec_level) {
     assert(call_level && dec_level);
+    printf("call level: %s, dec level %s\n",
+            S_name(F_name(call_level->frame)),
+            S_name(F_name(dec_level->frame)));
 
     T_exp frame = F_framePtr(call_level->frame);
     Tr_level level = call_level;
-    while (level && level != dec_level) {
+    while (level != dec_level && level != Tr_outermost()) {
         frame = F_preFrame(frame);
         level = level->parent;
+    }
+
+    if (level == Tr_outermost()) {
+        return NULL;
     }
 
     return frame;
@@ -440,8 +450,27 @@ Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body) {
     )));
 }
 
+Tr_exp Tr_seqExp(Tr_expList expList) {
+    return Tr_Ex(expList_to_Eseq(expList));
+}
+
+static T_exp expList_to_Eseq(Tr_expList expList) {
+    if (!expList->tail) {
+        assert(expList->head);
+        return unEx(expList->head);
+    }
+
+    return T_Eseq(unNx(expList->head), expList_to_Eseq(expList->tail));
+}
+
 Tr_exp Tr_callExp(Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_expList args) {
     /* one more argument, static link */
+    assert(label);
+    if (dec_level != Tr_outermost()) {
+        /* since function entry is its own level */
+        dec_level = dec_level->parent;
+    }
+
     T_exp fp = follow_static_link(call_level, dec_level);
 
     if (fp) {
@@ -454,7 +483,6 @@ Tr_exp Tr_callExp(Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_
 
 Tr_exp Tr_letExp(Tr_exp body, Tr_level level) {
     Tr_fragListAdd(F_ProcFrag(unNx(body), level->frame));
-
     return body;
 }
 
@@ -470,21 +498,23 @@ Tr_exp Tr_arrayExp(Tr_exp size, Tr_exp init) {
 }
 
 Tr_exp Tr_recordExp(Tr_expList expList) {
+    /* assert(expList); */
     int size = 0;
     Tr_expList list = expList;
-    while (list->head) {
+    while (list && list->head) {
         size ++;
         list = list->tail;
     }
 
     T_exp call = F_externalCall("allocRecord", T_ExpList(T_Const(size * F_wordSize), NULL));
     Temp_temp t = Temp_newtemp();
-    return Tr_Ex(T_Eseq(T_Seq(T_Move(T_Temp(t), call),
-                    Tr_recordInit(T_Temp(t), expList, 0)),
-                T_Temp(t)));
+    return Tr_Ex(T_Eseq(
+                T_Seq(T_Move(T_Temp(t), call),
+                    Tr_recordInit(T_Temp(t), expList, 0)), T_Temp(t)));
 }
 
 T_stm Tr_recordInit(T_exp start, Tr_expList expList, int offset) {
+    assert(start);
     if (!expList) {
         return NULL;
     }
@@ -497,6 +527,8 @@ T_stm Tr_recordInit(T_exp start, Tr_expList expList, int offset) {
 
 
 Tr_exp Tr_varDec(Tr_access access) {
+    assert(access);
+    assert(access->level);
     return Tr_Ex(F_Exp(access->access, F_framePtr(access->level->frame)));
 }
 

@@ -9,6 +9,8 @@
 #include "tree.h"
 #include "util.h"
 
+#define DEBUG 1
+
 const int F_wordSize = 4;
 /* stack link offset in the frame */
 static char *EAX = "%eax";
@@ -62,7 +64,7 @@ struct F_frame_ {
     F_accessList formals_list;
 };
 
-static struct F_frame_ root_frame = {0, 0, NULL, NULL, NULL};
+static F_frame root_frame = NULL;
 
 static F_accessList F_AccessList(F_access head, F_accessList tail);
 static F_accessList F_gen_formals(F_frame frame, U_boolList boolList);
@@ -125,23 +127,23 @@ void F_FragListAppend(F_fragList list, F_frag item) {
 }
 
 /*
- * return frame pointer of f
+ * return current frame pointer of f
  */
 T_exp F_framePtr(F_frame f) {
-    assert(f);
     return T_Temp(Temp_explicitTemp(REG_EBP));
 }
 
 /* exp is the current positon of frame pointer */
 T_exp F_preFrame(T_exp exp) {
+    assert(exp);
     return T_Mem(T_Binop(T_plus, exp, T_Const(SL_OFFSET)));
 }
 
 /*
  * return previous frame pointer
  */
-T_exp F_preFramPtr(F_frame f) {
-    /* return T_Mem(T_Binop( T_plus, T_Temp(Temp_explicitTemp(REG_EBP)), T_Const(SL_OFFSET))); */
+T_exp F_preFramePtr(F_frame f) {
+    assert(f && f->formals_list);
     return F_Exp(f->formals_list->head, F_framePtr(f));
 }
 
@@ -233,6 +235,7 @@ static F_access InReg(Temp_temp reg) {
 }
 
 T_exp F_externalCall(string s, T_expList args) {
+    assert(s);
     return T_Call(T_Name(Temp_namedlabel(s)), args);
 }
 
@@ -288,7 +291,12 @@ Temp_temp F_RV() {
 
 
 F_frame outermost_frame() {
-    return &root_frame;
+    if (!root_frame) {
+        root_frame = F_newFrame(
+                Temp_namedlabel("outermost_frame"),
+                NULL);
+    }
+    return root_frame;
 }
 
 Temp_tempList CalleeSaves() {
