@@ -16,8 +16,9 @@ void *checked_malloc(int len) {
 }
 
 string String(char *s) {
-    string p = checked_malloc(strlen(s) + 1);
-    strcpy(p, s);
+    unsigned int length = strlen(s) + 1;
+    string p = checked_malloc(length);
+    strncpy(p, s, length);
     return p;
 }
 

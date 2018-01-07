@@ -26,6 +26,8 @@ static void assign_color(G_graph graph, SelectStack sstack, Temp_map coloring,
 static void simple_assign_color(G_graph graph, Temp_map coloring, Temp_tempList reg);
 static int assign_color_to_node(G_node node, Temp_map coloring, Temp_tempList regs);
 static string node_color(G_node node, Temp_map coloring);
+static int *make_color_list(Temp_tempList list, int n);
+
 /*
  * @parameters:
  * lg: live graph
@@ -42,6 +44,7 @@ struct COL_result COL_color(LiveGraph lg, Temp_map initial,
     ret.spills = NULL;
 
     int n_regs = Temp_ListLength(regs);
+    int *int_regs = make_color_list(regs, n_regs);
 
     G_nodeList simplify_list ;
     G_nodeList freeze_list ;
@@ -49,8 +52,7 @@ struct COL_result COL_color(LiveGraph lg, Temp_map initial,
     COL_make_worklist(lg, &simplify_list, &freeze_list, &spill_list, n_regs);
 
     if (G_NodeListLength(G_nodes(lg->graph)) <= 5) {
-        printf("simple coloring \n");
-        simple_assign_color(lg->graph, ret.coloring, regs);
+        /* simple_assign_color(lg->graph, ret.coloring, regs); */
     }
 
     return ret;
@@ -187,4 +189,18 @@ static void COL_make_worklist(LiveGraph lg, G_nodeList *simplify_list,
         }
         node_list = node_list->tail;
     }
+}
+
+/* make a array of int from a Temp_tempList */
+static int *make_color_list(Temp_tempList list, int n) {
+    int *ret = (int *) checked_malloc(n * sizeof(int));
+    int i = 0;
+    while (list && i < n) {
+        ret[i] = Temp_num(list->head);
+
+        i ++;
+        list = list->tail;
+    }
+
+    return ret;
 }

@@ -327,21 +327,24 @@ void Tr_init() {
  */
 Tr_exp Tr_simpleVar(Tr_access declared_access, Tr_level call_level) {
     T_exp dec_exp = follow_static_link(call_level, declared_access->level);
+    /* suppose var will not declared int outermost_level */
     assert(dec_exp);
     return Tr_Ex(F_Exp(declared_access->access, dec_exp));
 }
 
 /*
  * get the frame pointer of the F_frame where declared that variable/function
- * since register ebp is overwritten, it should query recursively from call level
+ * is dec_level is outermost_level, just return NULL
  */
 T_exp follow_static_link(Tr_level call_level, Tr_level dec_level) {
     assert(call_level && dec_level);
-    printf("call level: %s, dec level %s\n",
-            S_name(F_name(call_level->frame)),
-            S_name(F_name(dec_level->frame)));
+    /*
+     * printf("call level: %s, dec level %s\n",
+     *         S_name(F_name(call_level->frame)),
+     *         S_name(F_name(dec_level->frame)));
+     */
 
-    T_exp frame = F_framePtr(call_level->frame);
+    T_exp frame = F_framePtr();
     Tr_level level = call_level;
     while (level != dec_level && level != Tr_outermost()) {
         frame = F_preFrame(frame);
@@ -487,7 +490,7 @@ Tr_exp Tr_letExp(Tr_exp body, Tr_level level) {
 }
 
 Tr_exp Tr_fieldVar(Tr_exp var, int order) {
-    return Tr_Ex(T_Mem(T_Binop(T_plus, T_Mem(unEx(var)), T_Const(order))));
+    return Tr_Ex(T_Mem(T_Binop(T_plus, unEx(var), T_Const(order))));
 }
 
 Tr_exp Tr_arrayExp(Tr_exp size, Tr_exp init) {

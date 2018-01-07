@@ -10,8 +10,7 @@
 #include "util.h"
 #include <stdio.h>
 
-/*! TODO: many tricks
- *  \todo many tricks
+/*! TODO:
  */
 struct RA_result RA_regAlloc(F_frame f, AS_instrList il) {
     G_graph graph = FG_AssemFlowGraph(il, f);

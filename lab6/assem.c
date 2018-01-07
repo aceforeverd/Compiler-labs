@@ -24,7 +24,7 @@ AS_targets AS_Targets(Temp_labelList labels) {
 AS_instr AS_Oper(string a, Temp_tempList d, Temp_tempList s, AS_targets j) {
     AS_instr p = (AS_instr)checked_malloc(sizeof *p);
     p->kind = I_OPER;
-    p->u.OPER.assem = a;
+    p->u.OPER.assem = String(a);
     p->u.OPER.dst = d;
     p->u.OPER.src = s;
     p->u.OPER.jumps = j;
@@ -34,7 +34,7 @@ AS_instr AS_Oper(string a, Temp_tempList d, Temp_tempList s, AS_targets j) {
 AS_instr AS_Label(string a, Temp_label label) {
     AS_instr p = (AS_instr)checked_malloc(sizeof *p);
     p->kind = I_LABEL;
-    p->u.LABEL.assem = a;
+    p->u.LABEL.assem = String(a);
     p->u.LABEL.label = label;
     return p;
 }
@@ -42,7 +42,7 @@ AS_instr AS_Label(string a, Temp_label label) {
 AS_instr AS_Move(string a, Temp_tempList d, Temp_tempList s) {
     AS_instr p = (AS_instr)checked_malloc(sizeof *p);
     p->kind = I_MOVE;
-    p->u.MOVE.assem = a;
+    p->u.MOVE.assem = String(a);
     p->u.MOVE.dst = d;
     p->u.MOVE.src = s;
     return p;
@@ -119,6 +119,7 @@ static void format(char *result, string assem, Temp_tempList dst,
                     i++;
                     break;
                 default:
+                    fprintf(stderr, "UNKNOW character: %c\n", *(p));
                     assert(0);
             }
         } else {
@@ -168,13 +169,6 @@ void AS_printInstrList(FILE *out, AS_instrList iList, Temp_map m) {
         AS_print(out, iList->head, m);
     }
     fprintf(out, "\n");
-}
-
-void AS_printInstrList_x(FILE *out, AS_instrList iList, char *s) {
-    if (!strcmp(s, "tif.tig")) {
-        fprintf(out,
-                "movl %%edi, -4(%%ebp)\n movl %%esi, -8(%%ebp)\n movl	-4(%%ebp), %%eax\n cmpl	-8(%%ebp), %%eax\n jle	.L2\n movl	-4(%%ebp), %%eax\n jmp	.L3\n .L2:\n movl	-8(%%ebp), %%eax\n .L3:\n" );
-    }
 }
 
 AS_proc AS_Proc(string p, AS_instrList b, string e) {

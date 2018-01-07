@@ -1,16 +1,16 @@
-#include "semant.h"
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
 #include "absyn.h"
 #include "env.h"
 #include "errormsg.h"
 #include "helper.h"
 #include "printtree.h"
+#include "semant.h"
 #include "symbol.h"
 #include "translate.h"
 #include "types.h"
 #include "util.h"
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
 
 #define DEBUG 1
 

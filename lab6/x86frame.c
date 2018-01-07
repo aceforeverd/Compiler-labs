@@ -37,10 +37,13 @@ const int REG_FP = REG_EBP;
 const int REG_SP= REG_EBP;
 const int REG_CALLER_SAVE = 21;
 const int REG_RET_ADDR = 22;
-const int REG_RET_VAL = 23;
+const int REG_RET_VAL = REG_EAX;
 const int REG_MUL_HIGH = REG_EDX;
 const int REG_MUL_LOW = REG_EAX;
 const int REG_ZERO = 26;
+
+static Temp_tempList f_registers = NULL;
+static Temp_map F_ntempMap = NULL;
 
 static F_accessList F_buildAccessList(int pos, U_boolList formals);
 
@@ -129,7 +132,7 @@ void F_FragListAppend(F_fragList list, F_frag item) {
 /*
  * return current frame pointer of f
  */
-T_exp F_framePtr(F_frame f) {
+T_exp F_framePtr() {
     return T_Temp(Temp_explicitTemp(REG_EBP));
 }
 
@@ -144,7 +147,7 @@ T_exp F_preFrame(T_exp exp) {
  */
 T_exp F_preFramePtr(F_frame f) {
     assert(f && f->formals_list);
-    return F_Exp(f->formals_list->head, F_framePtr(f));
+    return F_Exp(f->formals_list->head, F_framePtr());
 }
 
 /*
@@ -259,9 +262,9 @@ AS_proc F_procEntryExit3(F_frame frame, AS_instrList body) {
     sprintf(buf, "%s pushl %%ebp\n movl %%esp, %%ebp\n subl $128, %%ebp\n", S_name(frame->name));
 
     AS_proc proc = checked_malloc(sizeof(*proc));
-    proc->epilog = "pop %%ebp\nret\n";
+    proc->epilog = String("pop %ebp\nret\n");
+    proc->prolog = String(buf);
     proc->body = body;
-    proc->prolog = buf;
     return proc;
 }
 
@@ -301,8 +304,9 @@ F_frame outermost_frame() {
 
 Temp_tempList CalleeSaves() {
     return Temp_TempList(Temp_explicitTemp(REG_RET_VAL),
-            Temp_TempList(Temp_explicitTemp(REG_RET_ADDR), NULL));
+            NULL);
 }
+
 /* return a list of temp that reserved by call function */
 Temp_tempList CallDefs() {
     return Temp_TempList(Temp_explicitTemp(REG_CALLER_SAVE),
@@ -315,18 +319,20 @@ Temp_tempList MulDefs() {
 }
 
 Temp_tempList F_registers() {
-    return Temp_TempList(Temp_explicitTemp(REG_EAX),
-            Temp_TempList(Temp_explicitTemp(REG_EBX),
-                Temp_TempList(Temp_explicitTemp(REG_ECX),
-                    Temp_TempList(Temp_explicitTemp(REG_EDX),
-                        Temp_TempList(Temp_explicitTemp(REG_ESI),
-                            Temp_TempList(Temp_explicitTemp(REG_EDI),
-                                Temp_TempList(Temp_explicitTemp(REG_ESP),
-                                    Temp_TempList(Temp_explicitTemp(REG_EBP), NULL))))))));
+    if (!f_registers) {
+        f_registers = Temp_TempList(Temp_explicitTemp(REG_EAX),
+                Temp_TempList(Temp_explicitTemp(REG_EBX),
+                    Temp_TempList(Temp_explicitTemp(REG_ECX),
+                        Temp_TempList(Temp_explicitTemp(REG_EDX),
+                            Temp_TempList(Temp_explicitTemp(REG_ESI),
+                                Temp_TempList(Temp_explicitTemp(REG_EDI),
+                                    Temp_TempList(Temp_explicitTemp(REG_ESP),
+                                        Temp_TempList(Temp_explicitTemp(REG_EBP), NULL))))))));
+    }
+    return f_registers;
 }
 
 Temp_map F_Temps() {
-    static Temp_map F_ntempMap;
     if (!F_ntempMap) {
         F_ntempMap = Temp_empty();
         Temp_enter(F_ntempMap, Temp_explicitTemp(REG_EAX), EAX);
@@ -348,21 +354,27 @@ Temp_temp Temp_regLookup(string name) {
     if (strcmp(name, EBX) == 0) {
         return Temp_explicitTemp(REG_EBX);
     }
-    if (strcmp(name, ECX) == 0)
+    if (strcmp(name, ECX) == 0) {
         return Temp_explicitTemp(REG_ECX);
-    if (strcmp(name, EDX) == 0)
+    }
+    if (strcmp(name, EDX) == 0) {
         return Temp_explicitTemp(REG_EDX);
-    if (strcmp(name, ESI) == 0)
+    }
+    if (strcmp(name, ESI) == 0) {
         return Temp_explicitTemp(REG_ESI);
-    if (strcmp(name, EDI) == 0)
+    }
+    if (strcmp(name, EDI) == 0) {
         return Temp_explicitTemp(REG_EDI);
-    if (strcmp(name, ESP) == 0)
+    }
+    if (strcmp(name, ESP) == 0) {
         return Temp_explicitTemp(REG_ESP);
+    }
 
     return Temp_explicitTemp(REG_EBP);
 }
 
 Temp_temp Temp_toTemp(string name) {
+    assert(name);
     int num = atoi(name);
     assert(num < 10);
     return Temp_explicitTemp(num);

@@ -53,14 +53,18 @@ static void doProc(FILE *out, F_frame frame, T_stm body) {
 
     blo = C_basicBlocks(stmList);
     C_stmListList stmLists = blo.stmLists;
-    /*for (; stmLists; stmLists = stmLists->tail) {
-           printStmList(stdout, stmLists->head);
-           printf("------====Basic block=====-------\n");
-    }*/
+    /*
+     * for (; stmLists; stmLists = stmLists->tail) {
+     *     printStmList(stdout, stmLists->head);
+     *     printf("------====Basic block=====-------\n");
+     * }
+     */
 
     stmList = C_traceSchedule(blo);
-    /*printStmList(stdout, stmList);
-    printf("-------====trace=====-----\n");*/
+    /*
+     * printStmList(stdout, stmList);
+     * printf("-------====trace=====-----\n");
+     */
     iList = F_codegen(frame, stmList); /* 9 */
 
     AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name()));
@@ -132,10 +136,9 @@ int main(int argc, string *argv) {
         // If you have implemented escape analysis, uncomment this
         // Esc_findEscape(absyn_root); /* set varDec's escape field */
 
-        pr_exp(stdout, absyn_root, 4);
+        /* pr_exp(stdout, absyn_root, 4); */
 
         frags = SEM_transProg(absyn_root);
-        printf("pass SEM_transProg\n");
         F_echoFragList(frags);
 
         if (anyErrors) {
