@@ -67,14 +67,14 @@ S_table E_base_venv(void) {
     level = Tr_outermost();
     venv = S_empty();
 
-    S_enter(venv, S_Symbol("flush"), E_FunEntry(level, Temp_namedlabel("flush"), NULL, NULL));
+    S_enter(venv, S_Symbol("flush"), E_FunEntry(level, Temp_namedlabel("flush"), NULL, Ty_Void()));
 
     result = Ty_Int();
 
     formals = checked_malloc(sizeof(*formals));
     formals->head = Ty_Int();
     formals->tail = NULL;
-    S_enter(venv, S_Symbol("exit"), E_FunEntry(level, Temp_namedlabel("exit"), formals, NULL));
+    S_enter(venv, S_Symbol("exit"), E_FunEntry(level, Temp_namedlabel("exit"), formals, Ty_Void()));
 
     S_enter(venv, S_Symbol("not"), E_FunEntry(level, Temp_namedlabel("not"), formals, result));
 
@@ -88,9 +88,9 @@ S_table E_base_venv(void) {
     formals->head = Ty_String();
     formals->tail = NULL;
 
-    S_enter(venv, S_Symbol("print"), E_FunEntry(level, Temp_namedlabel("print"), formals, NULL));
+    S_enter(venv, S_Symbol("print"), E_FunEntry(level, Temp_namedlabel("print"), formals, Ty_Void()));
 
-    S_enter(venv, S_Symbol("printi"), E_FunEntry(level, Temp_namedlabel("printi"), Ty_TyList(Ty_Int(), NULL), NULL));
+    S_enter(venv, S_Symbol("printi"), E_FunEntry(level, Temp_namedlabel("printi"), Ty_TyList(Ty_Int(), NULL), Ty_Void()));
 
     S_enter(venv, S_Symbol("initArray"), E_FunEntry(
                 level, Temp_namedlabel("initArray"), Ty_TyList(Ty_Int(), Ty_TyList(Ty_Int(), NULL)), Ty_Int()));
