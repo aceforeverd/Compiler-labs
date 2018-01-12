@@ -35,7 +35,7 @@ const int SL_OFFSET = 8;
 
 const int REG_FP = REG_EBP;
 const int REG_SP= REG_EBP;
-const int REG_CALLER_SAVE = 21;
+const int REG_CALLER_SAVE = REG_EAX;
 const int REG_RET_ADDR = 22;
 const int REG_RET_VAL = REG_EAX;
 const int REG_MUL_HIGH = REG_EDX;
@@ -86,6 +86,7 @@ F_frag F_StringFrag(Temp_label label, string str) {
     f->u.stringg.label = label;
 
     /*! TODO: write to memory or do it later
+     *  done in main.c
      */
 
     return f;
@@ -123,10 +124,17 @@ F_fragList F_FragList(F_frag head, F_fragList tail) {
 /*
  * append item to the end of the list
  */
-void F_FragListAppend(F_fragList list, F_frag item) {
-    for (; list->tail; list = list->tail) {}
+F_fragList F_FragListAppend(F_fragList l, F_frag item) {
+    F_fragList f = F_FragList(item, NULL);
+    if (!l) {
+        return f;
+    }
 
-    list->tail = F_FragList(item, NULL);
+    F_fragList list = l;
+    for (; list && list->tail; list = list->tail) {}
+
+    list->tail = f;
+    return l;
 }
 
 /*
@@ -150,6 +158,10 @@ T_exp F_preFramePtr(F_frame f) {
     return F_Exp(f->formals_list->head, F_framePtr());
 }
 
+T_exp F_ExpAddress(F_access acc, T_exp framePtr) {
+    assert(acc->kind == inFrame);
+    return T_Binop(T_plus, framePtr, T_Const(acc->u.offset));
+}
 /*
  * return a T_exp for the F_access
  */
@@ -242,7 +254,7 @@ T_exp F_externalCall(string s, T_expList args) {
     return T_Call(T_Name(Temp_namedlabel(s)), args);
 }
 
-T_stm F_procEntryExit1(F_frame frame, T_stm stm) {
+T_stm F_procEntryExit1(F_frame new_frame, T_stm stm) {
     return stm;
 }
 
@@ -259,10 +271,10 @@ AS_instrList F_procEntryExit2(AS_instrList body) {
 
 AS_proc F_procEntryExit3(F_frame frame, AS_instrList body) {
     char buf[128];
-    sprintf(buf, "%s pushl %%ebp\n movl %%esp, %%ebp\n subl $128, %%ebp\n", S_name(frame->name));
-
+    sprintf(buf, "%s:\n pushl %%ebp\n movl %%esp, %%ebp\n subl $128, %%esp\n",
+            S_name(frame->name));
     AS_proc proc = checked_malloc(sizeof(*proc));
-    proc->epilog = String("pop %ebp\nret\n");
+    proc->epilog = String("leave\nret\n");
     proc->prolog = String(buf);
     proc->body = body;
     return proc;
@@ -280,11 +292,6 @@ Temp_temp F_SP() {
 
 Temp_temp F_ZERO() {
     return Temp_explicitTemp(REG_ZERO);
-}
-
-/* return address */
-Temp_temp F_RA() {
-    return Temp_explicitTemp(REG_RET_ADDR);
 }
 
 /* return variable */
@@ -319,15 +326,24 @@ Temp_tempList MulDefs() {
 }
 
 Temp_tempList F_registers() {
+    return Temp_TempList(Temp_explicitTemp(REG_ESP),
+            Temp_TempList(Temp_explicitTemp(REG_EBP),
+                F_ava_registers()));
+}
+
+Temp_tempList F_ava_registers() {
     if (!f_registers) {
-        f_registers = Temp_TempList(Temp_explicitTemp(REG_EAX),
-                Temp_TempList(Temp_explicitTemp(REG_EBX),
-                    Temp_TempList(Temp_explicitTemp(REG_ECX),
-                        Temp_TempList(Temp_explicitTemp(REG_EDX),
-                            Temp_TempList(Temp_explicitTemp(REG_ESI),
-                                Temp_TempList(Temp_explicitTemp(REG_EDI),
-                                    Temp_TempList(Temp_explicitTemp(REG_ESP),
-                                        Temp_TempList(Temp_explicitTemp(REG_EBP), NULL))))))));
+        f_registers = Temp_TempList(
+            Temp_explicitTemp(REG_EAX),
+            Temp_TempList(
+                Temp_explicitTemp(REG_EBX),
+                Temp_TempList(
+                    Temp_explicitTemp(REG_ECX),
+                    Temp_TempList(
+                        Temp_explicitTemp(REG_EDX),
+                        Temp_TempList(Temp_explicitTemp(REG_ESI),
+                                      Temp_TempList(Temp_explicitTemp(REG_EDI),
+                                                    NULL))))));
     }
     return f_registers;
 }
@@ -345,6 +361,19 @@ Temp_map F_Temps() {
         Temp_enter(F_ntempMap, Temp_explicitTemp(REG_EBP), EBP);
     }
     return F_ntempMap;
+}
+
+Temp_map F_newMap() {
+    Temp_map newMap = Temp_empty();
+    Temp_enter(newMap, Temp_explicitTemp(REG_EAX), String(EAX));
+    Temp_enter(newMap, Temp_explicitTemp(REG_EBX), String(EBX));
+    Temp_enter(newMap, Temp_explicitTemp(REG_ECX), String(ECX));
+    Temp_enter(newMap, Temp_explicitTemp(REG_EDX), String(EDX));
+    Temp_enter(newMap, Temp_explicitTemp(REG_ESI), String(ESI));
+    Temp_enter(newMap, Temp_explicitTemp(REG_EDI), String(EDI));
+    Temp_enter(newMap, Temp_explicitTemp(REG_ESP), String(ESP));
+    Temp_enter(newMap, Temp_explicitTemp(REG_EBP), String(EBP));
+    return newMap;
 }
 
 Temp_temp Temp_regLookup(string name) {
@@ -384,3 +413,4 @@ void F_echoFrame(F_frame f) {
     assert(f);
     printf("name => %s\n", S_name(f->name));
 }
+

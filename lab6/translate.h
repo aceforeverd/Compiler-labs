@@ -58,7 +58,7 @@ Tr_exp Tr_seqExp(Tr_expList expList);
 
 Tr_exp Tr_callExp(Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_expList args);
 
-Tr_exp Tr_letExp(Tr_exp body, Tr_level level);
+Tr_exp Tr_letExp(Tr_expList dec_list, Tr_exp body, Tr_level level);
 
 Tr_exp Tr_forExp(Tr_level level);
 
@@ -69,7 +69,7 @@ Tr_exp Tr_arrayExp(Tr_exp init, Tr_exp type);
 Tr_exp Tr_recordExp(Tr_expList expList);
 T_stm Tr_recordInit(T_exp start, Tr_expList expList, int offset);
 
-Tr_exp Tr_varDec(Tr_access access);
+Tr_exp Tr_varDec(Tr_access access, Tr_exp init);
 
 Tr_exp Tr_typeDec();
 
@@ -78,5 +78,7 @@ Tr_exp Tr_funListDec(Tr_expList funcList);
 Tr_exp Tr_funDec(Tr_exp body, Tr_level level);
 
 Tr_exp Tr_nilExp();
+
+Tr_expList Tr_ExpListAppend(Tr_expList list, Tr_exp t);
 
 #endif

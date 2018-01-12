@@ -67,4 +67,5 @@ lex.yy.c
 Session.vim
 *.swp
 *.s
-testcases/
+.vim/
+tiger-compiler

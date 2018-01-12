@@ -1,7 +1,6 @@
 #include "absyn.h"
 #include "frame.h"
 #include "printtree.h"
-#include "runtime.c"
 #include "symbol.h"
 #include "table.h"
 #include "temp.h"
@@ -65,6 +64,16 @@ Tr_expList  Tr_ExpList(Tr_exp head, Tr_expList tail) {
     return list;
 }
 
+Tr_expList Tr_ExpListAppend(Tr_expList list, Tr_exp t) {
+    if (!list) {
+        if (t) return Tr_ExpList(t, NULL);
+        return NULL;
+    }
+    if (!t) return list;
+
+    return Tr_ExpList(list->head, Tr_ExpListAppend(list->tail, t));
+}
+
 static struct Tr_level_ outermost_level = {NULL, NULL};
 static F_fragList a_fraglist = NULL;
 static F_fragList fragList_tail = NULL;
@@ -83,6 +92,7 @@ static T_exp unEx(Tr_exp e);
 static T_stm unNx(Tr_exp e);
 static struct Cx unCx(Tr_exp e);
 static T_expList unExList(Tr_expList list);
+static T_stm unNxList(Tr_expList list);
 
 static Tr_exp Tr_Ex(T_exp ex) {
     Tr_exp exp = checked_malloc(sizeof(*exp));
@@ -149,7 +159,10 @@ Tr_level Tr_Level(F_frame f, Tr_level l) {
 }
 
 static T_exp unEx(Tr_exp e) {
-    assert(e);
+    if (!e) {
+        fprintf(stderr, "translate.c: unEx(Tr_exp e): e is NULL\n");
+        return T_Const(0);
+    }
     /* if (!e) { */
     /*     return T_Const(0); */
     /* } */
@@ -312,7 +325,8 @@ F_fragList Tr_getResult() {
 }
 
 void Tr_fragListAdd(F_frag frag) {
-    a_fraglist = F_FragList(frag, a_fraglist);
+    /* a_fraglist = F_FragList(frag, a_fraglist); */
+    a_fraglist = F_FragListAppend(a_fraglist, frag);
 }
 
 void Tr_init() {
@@ -434,6 +448,9 @@ Tr_exp Tr_forExp(Tr_level level) {
     return NULL;
 }
 
+
+/*! TODO: real done label
+ */
 Tr_exp Tr_breakExp(Tr_level level) {
     return Tr_Nx(T_Jump(NULL, Temp_LabelList(Temp_namedlabel("done"), NULL)));
 }
@@ -484,8 +501,11 @@ Tr_exp Tr_callExp(Temp_label label, Tr_level call_level, Tr_level dec_level, Tr_
     return Tr_Ex(F_externalCall(S_name(label), unExList(args)));
 }
 
-Tr_exp Tr_letExp(Tr_exp body, Tr_level level) {
-    Tr_fragListAdd(F_ProcFrag(unNx(body), level->frame));
+
+Tr_exp Tr_letExp(Tr_expList dec_list, Tr_exp body, Tr_level level) {
+    T_stm dec = unNxList(dec_list);
+    Tr_fragListAdd(F_ProcFrag(
+                T_Seq(dec, unNx(body)), level->frame));
     return body;
 }
 
@@ -512,14 +532,17 @@ Tr_exp Tr_recordExp(Tr_expList expList) {
     T_exp call = F_externalCall("allocRecord", T_ExpList(T_Const(size * F_wordSize), NULL));
     Temp_temp t = Temp_newtemp();
     return Tr_Ex(T_Eseq(
-                T_Seq(T_Move(T_Temp(t), call),
-                    Tr_recordInit(T_Temp(t), expList, 0)), T_Temp(t)));
+        T_Seq(T_Move(T_Temp(t), call), Tr_recordInit(T_Temp(t), expList, 0)),
+        T_Temp(t)));
 }
 
 T_stm Tr_recordInit(T_exp start, Tr_expList expList, int offset) {
     assert(start);
-    if (!expList) {
-        return NULL;
+    assert(expList);
+    if (expList && !expList->tail) {
+        return T_Move(
+                T_Mem(T_Binop(T_plus, start, T_Const(offset))),
+                unEx(expList->head));
     }
 
     return T_Seq(T_Move(
@@ -529,17 +552,20 @@ T_stm Tr_recordInit(T_exp start, Tr_expList expList, int offset) {
 }
 
 
-Tr_exp Tr_varDec(Tr_access access) {
+Tr_exp Tr_varDec(Tr_access access, Tr_exp init) {
     assert(access);
     assert(access->level);
-    return Tr_Ex(F_Exp(access->access, F_framePtr(access->level->frame)));
+    T_exp init_exp = unEx(init);
+    /* T_exp var = F_ExpAddress(access->access, F_framePtr()); */
+    T_stm stm = T_Move(F_Exp(access->access, F_framePtr()), init_exp);
+    return Tr_Nx(stm);
 }
 
 Tr_exp Tr_arrayDec(Tr_access access, int length, int init) {
     /* int *array = initArray(length, init); */
     // do variable init somewhere else
     return Tr_Ex(T_Mem(F_Exp(access->access,
-                    F_framePtr(access->level->frame))));
+                    F_framePtr())));
 }
 
 
@@ -563,3 +589,8 @@ Tr_exp Tr_nilExp() {
     return Tr_Ex(T_Const(0));
 }
 
+static T_stm unNxList(Tr_expList list) {
+    if (!list) return T_Exp(T_Const(0));
+    return T_Seq(unNx(list->head),
+            unNxList(list->tail));
+}

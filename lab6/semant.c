@@ -210,7 +210,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
                     EM_error(aExp->u.iff.then->pos,
                              "if-then exp's body must produce no value");
                 }
-                return expTy(NULL, Ty_Void());
+                return expTy(Tr_ifExp(test_ty.exp, then_ty.exp, NULL, level), Ty_Void());
             }
 
             if (then_ty.ty->kind != else_ty.ty->kind) {
@@ -221,6 +221,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
                 EM_error(aExp->u.iff.then->pos,
                          "then exp return type can't be nil");
             }
+
             if (else_ty.ty->kind == Ty_nil) {
                 EM_error(aExp->u.iff.elsee->pos,
                          "else exp return type can't be nil");
@@ -292,8 +293,12 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
             A_decList d;
             S_beginScope(venv);
             S_beginScope(tenv);
+            Tr_expList dec_list_exp = NULL;
+            Tr_exp dec_exp = NULL;
+            printf("let\n");
             for (d = aExp->u.let.decs; d; d = d->tail) {
-                transDec(venv, tenv, d->head, level, label);
+                dec_exp = transDec(venv, tenv, d->head, level, label);
+                dec_list_exp = Tr_ExpListAppend(dec_list_exp, dec_exp);
             }
 
             assert(aExp->u.let.body);
@@ -301,7 +306,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
             S_endScope(tenv);
             S_endScope(venv);
 
-            return expTy(Tr_letExp(exp.exp, level), Ty_Void());
+            return expTy(Tr_letExp(dec_list_exp, exp.exp, level), Ty_Void());
         }
 
         case A_arrayExp: {
@@ -396,7 +401,7 @@ Tr_exp transDec(S_table venv, S_table tenv, A_dec dec, Tr_level level,
                 S_enter(venv, dec->u.var.var, E_VarEntry(access, e.ty));
             }
 
-            return Tr_varDec(access);
+            return Tr_varDec(access, e.exp);
         }
 
         case A_typeDec: {
@@ -696,6 +701,7 @@ Tr_expList transFunDecBody(S_table venv, S_table tenv, A_fundecList fundecList,
     if (!fun_env || fun_env->kind == E_varEntry) {
         EM_error(fundecList->head->pos, "function %s not declared\n",
                  S_name(fundecList->head->name));
+        assert(0);
     }
     expty_t body_ty = transExp(venv, tenv, fundecList->head->body,
                                fun_env->u.fun.level, fun_env->u.fun.label);

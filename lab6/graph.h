@@ -91,4 +91,10 @@ void G_enter(G_table t, G_node node, void *value);
 /* Tell what "node" maps to in table "t" */
 void *G_look(G_table t, G_node node);
 
+int G_GraphSize(G_graph g);
+
+int G_nodeCount(G_graph g);
+
+int G_nodeKey(G_node node);
+
 #endif

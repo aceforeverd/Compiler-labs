@@ -33,6 +33,7 @@ Temp_tempList FG_def(G_node n) {
  */
 Temp_tempList FG_use(G_node n) {
     AS_instr instr = G_nodeInfo(n);
+    assert(instr);
 
     switch(instr->kind) {
         case I_OPER:
@@ -55,7 +56,6 @@ bool FG_isMove(G_node n) {
 /*
  * generate control flow graph
  * TODO: to use F_frame
- * TODO: to support JMP
  */
 G_graph FG_AssemFlowGraph(AS_instrList il, F_frame f) {
     G_graph graph  = G_Graph();

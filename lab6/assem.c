@@ -6,7 +6,6 @@
 #include "absyn.h"
 #include "assem.h"
 #include "errormsg.h"
-#include "frame.h"
 #include "tree.h"
 #include "util.h"
 #include <stdio.h>
@@ -96,12 +95,21 @@ static void format(char *result, string assem, Temp_tempList dst,
                 case 's': {
                     int n = atoi(++p);
                     string s = Temp_look(m, nthTemp(src, n));
+                    if (!s) {
+                        fprintf(stderr, "entry not found for temp %d\n", Temp_num(nthTemp(src, n)));
+                        assert(0);
+                    }
                     strcpy(result + i, s);
                     i += strlen(s);
                 } break;
                 case 'd': {
                     int n = atoi(++p);
                     string s = Temp_look(m, nthTemp(dst, n));
+                    if (!s) {
+                        fprintf(stderr, "entry not found for temp %d\n", Temp_num(nthTemp(dst, n)));
+                        printf("instr: %s\n", assem);
+                        assert(0);
+                    }
                     strcpy(result + i, s);
                     i += strlen(s);
                 } break;
@@ -131,6 +139,7 @@ static void format(char *result, string assem, Temp_tempList dst,
 }
 
 void AS_print(FILE *out, AS_instr i, Temp_map m) {
+    assert(i);
     char r[200]; /* result */
     switch (i->kind) {
         case I_OPER:
@@ -177,5 +186,53 @@ AS_proc AS_Proc(string p, AS_instrList b, string e) {
     proc->body = b;
     proc->epilog = e;
     return proc;
+}
+
+void AS_rewrite(AS_instrList iList, Temp_map m) {
+    while (iList) {
+        iList->head = AS_rewrite_one(iList->head, m);
+
+        iList = iList->tail;
+    }
+}
+
+AS_instr AS_rewrite_one(AS_instr instr, Temp_map m) {
+    assert(instr);
+    char str[200];
+    switch(instr->kind) {
+        case I_OPER:
+        {
+            format(str, instr->u.OPER.assem, instr->u.OPER.dst, instr->u.OPER.src,
+                    instr->u.OPER.jumps, m);
+            instr->u.OPER.assem = String(str);
+            break;
+        }
+        case I_LABEL:
+        {
+            format(str, instr->u.LABEL.assem, NULL, NULL, NULL, m);
+            instr->u.LABEL.assem = String(str);
+            break;
+        }
+        case I_MOVE:
+        {
+            if ((instr->u.MOVE.dst == NULL) && (instr->u.MOVE.src == NULL)) {
+                char *src = strchr(instr->u.MOVE.assem, '%');
+                if (src != NULL) {
+                    char *dst = strchr(src + 1, '%');
+                    if (dst != NULL) {
+                        // fprintf(out, "src: %s; dst: %s\n", src, dst);
+                        if ((src[1] == dst[1]) && (src[2] == dst[2]) &&
+                            (src[3] == dst[3]))
+                            break;
+                    }
+                }
+            }
+            format(str, instr->u.MOVE.assem, instr->u.MOVE.dst, instr->u.MOVE.src, NULL, m);
+            instr->u.MOVE.assem = String(str);
+            break;
+        }
+    }
+
+    return instr;
 }
 

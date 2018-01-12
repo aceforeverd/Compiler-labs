@@ -96,7 +96,7 @@ G_node G_Node(G_graph g, void *info) {
 
     if (g->mylast == NULL) {
         g->mylast = p;
-        g->mynodes = g->mylast;
+        g->mynodes = p;
     } else {
         g->mylast->tail = p;
         g->mylast = g->mylast->tail;
@@ -114,12 +114,10 @@ G_nodeList G_nodes(G_graph g) {
 }
 
 int G_NodeListLength(G_nodeList list) {
-    int size = 0;
-    if (list->head) {
-        size ++;
-        list = list->tail;
+    if (!list || !list->head) {
+        return 0;
     }
-    return size;
+    return 1 + G_NodeListLength(list->tail);
 }
 
 /* return true if a is in l list */
@@ -321,7 +319,10 @@ G_nodeList G_adj(G_node n) { return cat(G_succ(n), G_pred(n)); }
 /*  get node info
  *  AS_instr or templist
  */
-void *G_nodeInfo(G_node n) { return n->info; }
+void *G_nodeInfo(G_node n) {
+    assert(n);
+    return n->info;
+}
 
 /* G_node table functions */
 
@@ -330,3 +331,18 @@ G_table G_empty(void) { return TAB_empty(); }
 void G_enter(G_table t, G_node node, void *value) { TAB_enter(t, node, value); }
 
 void *G_look(G_table t, G_node node) { return TAB_look(t, node); }
+
+int G_GraphSize(G_graph g) {
+    assert(g);
+    return g->nodecount;
+}
+
+int G_nodeCount(G_graph g) {
+    assert(g);
+    return g->nodecount;
+}
+
+int G_nodeKey(G_node node) {
+    assert(node);
+    return node->mykey;
+}

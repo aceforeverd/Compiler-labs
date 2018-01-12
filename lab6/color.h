@@ -14,6 +14,6 @@ struct COL_result {
     Temp_tempList spills;
 };
 struct COL_result COL_color(LiveGraph liveGraph, Temp_map initial,
-                            Temp_tempList regs);
+                            Temp_tempList regs, Temp_tempList ava_regs);
 
 #endif

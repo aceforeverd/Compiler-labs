@@ -45,9 +45,14 @@ Temp_temp Temp_newtemp(void) {
     return temp;
 }
 
+static Temp_temp explicit_temp_list[100];
 Temp_temp Temp_explicitTemp(int num) {
     assert(num < 100);
+    if (explicit_temp_list[num]) {
+        return explicit_temp_list[num];
+    }
     Temp_temp temp = (Temp_temp) checked_malloc(sizeof(*temp));
+    explicit_temp_list[num] = temp;
 
     temp->num = num;
     {
@@ -83,7 +88,8 @@ Temp_tempList Temp_ListSplice(Temp_tempList left, Temp_tempList right) {
 }
 
 bool Temp_equal(Temp_temp a, Temp_temp b) {
-    assert(a && b);
+    assert(a);
+    assert(b);
     return a->num == b->num;
 }
 
@@ -210,21 +216,32 @@ int Temp_ListLength(Temp_tempList list) {
  * put item at top of the list
  */
 Temp_tempList Temp_ListAppend(Temp_tempList body, Temp_temp item) {
+    assert(body);
     if (Temp_ListInclude(body, item)) {
         return body;
     }
 
-    return Temp_TempList(item, body);
+    Temp_tempList tmps = body;
+    while (tmps && tmps->tail) {
+        tmps = tmps->tail;
+    }
+    tmps->tail = Temp_TempList(item, NULL);
+    return body;
 }
 
 /*
  * templsit -= temp
  */
 Temp_tempList Temp_ListExcludeTemp(Temp_tempList body, Temp_temp item) {
-    if (!item || !body) {
+    if (!item) {
         return body;
     }
 
+    if (!body) {
+        return NULL;
+    }
+
+    assert(body->head);
     if (Temp_equal(body->head, item)) {
         return body->tail;
     }
@@ -264,7 +281,8 @@ Temp_tempList Temp_ListExcludeTemp2(Temp_tempList body, Temp_temp item) {
  * templist -= templist2
  */
 Temp_tempList Temp_ListExclude(Temp_tempList left, Temp_tempList right) {
-    while (right) {
+    if (!left) return left;
+    while (right && right->head) {
         left = Temp_ListExcludeTemp(left, right->head);
         right = right->tail;
     }
@@ -280,7 +298,8 @@ Temp_tempList Temp_ListUnion(Temp_tempList left, Temp_tempList right) {
     if (!left) {
         return right;
     }
-    while (right) {
+    assert(left->head);
+    while (right && right->head) {
         left = Temp_ListAppend(left, right->head);
         right = right->tail;
     }
@@ -368,6 +387,7 @@ void Temp_dumpMap(FILE *out, Temp_map m) {
 }
 
 int Temp_num(Temp_temp temp) {
+    assert(temp);
     return temp->num;
 }
 
@@ -377,4 +397,20 @@ string Temp_toString(Temp_temp temp) {
     sprintf(str, "%d", temp->num);
     str[1] = '\0';
     return str;
+}
+
+int Temp_index(Temp_tempList list, Temp_temp t) {
+    if (!t || !list) {
+        return -1;
+    }
+
+    int i = 0;
+    while (list) {
+        if (Temp_equal(list->head, t)) {
+            return i;
+        }
+        i ++;
+        list = list->tail;
+    }
+    return -1;
 }

@@ -60,4 +60,6 @@ void Temp_dumpMap(FILE *out, Temp_map m);
 int Temp_num(Temp_temp temp);
 string Temp_toString(Temp_temp temp);
 
+int Temp_index(Temp_tempList list, Temp_temp t);
+
 #endif

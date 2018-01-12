@@ -20,7 +20,7 @@ static char *AS_SUBI = "SUBI";
 static char *AS_MUL = "MUL";
 static char *AS_DIV = "DIV";
 static char *AS_MOVE = "movl";
-static char *AS_STORE = "STORE";
+static char *AS_STORE = "movl";
 static char *AS_LOAD = "movl";
 static char *AS_JMP = "jmp";
 static char *AS_CALL = "call";
@@ -86,8 +86,8 @@ static Temp_temp munchExp(T_exp e) {
         case T_CONST:
             {
                 Temp_temp r = Temp_newtemp();
-                sprintf(str, "xor `s0, `s0\n%s `s0 <- `s0 + %d\n", AS_ADDI, e->u.CONST);
-                emit(AS_Oper(str, NULL, Temp_TempList(r, NULL), NULL));
+                sprintf(str, "%s $%d, `d0\n", AS_MOVE, e->u.CONST);
+                emit(AS_Oper(str, L(r, NULL), Temp_TempList(r, NULL), NULL));
                 return r;
             }
         case T_TEMP:
@@ -113,7 +113,7 @@ static Temp_temp munchExp(T_exp e) {
                 munchExp(e->u.CALL.fun);
                 Temp_tempList list = munchArgs(0, e->u.CALL.args);
                 sprintf(str, "%s %s\n", AS_CALL, S_name(e->u.CALL.fun->u.NAME));
-                emit(AS_Oper(str, CallDefs(), list,
+                emit(AS_Oper(str, CallDefs(), L(F_RV(), list),
                             AS_Targets(Temp_LabelList(e->u.CALL.fun->u.NAME, NULL))));
                 return F_RV();
             }
@@ -200,7 +200,7 @@ static Temp_temp munchMemExp(T_exp e) {
     if (exp->kind == T_BINOP && exp->u.BINOP.op == T_plus) {
         if (exp->u.BINOP.left->kind == T_CONST) {
             /* MEM(BINOP(oper, CONST(i), e1)) */
-            sprintf(str, "%s `d0 <- M[`s0 + %d]\n", AS_LOAD, exp->u.BINOP.left->u.CONST);
+            sprintf(str, "%s %d(`s0), `d0\n", AS_LOAD, exp->u.BINOP.left->u.CONST);
             emit(AS_Oper(str, L(r, NULL), L(munchExp(exp->u.BINOP.right), NULL),
                          NULL));
             return r;
@@ -208,7 +208,7 @@ static Temp_temp munchMemExp(T_exp e) {
 
         if (exp->u.BINOP.right->kind == T_CONST) {
             /* MEM(BINOP(oper, e1, CONST(i))) */
-            sprintf(str, "%s `d0 <- M[`s0 + %d]\n", AS_LOAD,
+            sprintf(str, "%s %d(`s0), `d0\n", AS_LOAD,
                     exp->u.BINOP.right->u.CONST);
             Temp_temp left = munchExp(exp->u.BINOP.left);
             emit(AS_Oper(str, L(r, NULL), L(left, NULL),
@@ -219,13 +219,13 @@ static Temp_temp munchMemExp(T_exp e) {
 
     if (exp->kind == T_CONST) {
         /* MEM(CONST(i)) */
-        sprintf(str, "%s `d0 <- M[r0+%d]\n", AS_LOAD, exp->u.CONST);
+        sprintf(str, "%s %d(r0), `d0\n", AS_LOAD, exp->u.CONST);
         emit(AS_Oper(str, L(r, NULL), NULL, NULL));
         return r;
     }
 
     /* MEM(e) */
-    sprintf(str, "%s `d0 <- M[`s0 + 0]\n", AS_LOAD);
+    sprintf(str, "%s (`s0), `d0\n", AS_LOAD);
     emit(AS_Oper(str, L(r, NULL),
                 L(munchExp(exp), NULL), NULL));
     return r;
@@ -274,18 +274,22 @@ static Temp_temp munchBinExp(T_exp e) {
          */
         if (e->u.BINOP.left->kind == T_CONST && e->u.BINOP.op == T_plus) {
             /* ADDI */
-            sprintf(str, "%s `d0 <- `s0 + %d\n", AS_ADDI, e->u.BINOP.left->u.CONST);
+            Temp_temp rs = munchExp(e->u.BINOP.right);
+            sprintf(str, "leal %d(`s0), `d0\n", e->u.BINOP.left->u.CONST);
             emit(AS_Oper(str,
-                        L(r, NULL), L(munchExp(e->u.BINOP.right), NULL), NULL));
+                     L(r, NULL), L(rs, NULL), NULL));
             return r;
         }
 
         if (e->u.BINOP.right->kind == T_CONST) {
             /* ADDI or SUBI */
-            sprintf(str, "%s `d0 <- `s0 %c %d\n", cmd, oper, e->u.BINOP.right->u.CONST);
-            emit(AS_Oper(str,
-                        L(r, NULL), L(munchExp(e->u.BINOP.left), NULL), NULL
-                        ));
+            Temp_temp rs = munchExp(e->u.BINOP.left);
+            if (e->u.BINOP.op == T_plus) {
+                sprintf(str, "leal %d(`s0), `d0\n", e->u.BINOP.right->u.CONST);
+            } else if (e->u.BINOP.op == T_minus) {
+                sprintf(str, "lead %d(`s0), `d0\n", -e->u.BINOP.right->u.CONST);
+            }
+            emit(AS_Oper(str, L(r, NULL), L(rs, NULL), NULL));
             return r;
         }
     }
@@ -294,10 +298,11 @@ static Temp_temp munchBinExp(T_exp e) {
      * the normal things
      * ADD, SUB, MUL, DIV
      */
-    sprintf(str, "%s `d0 <- `s0 %c `s1\n", cmd, oper);
+    Temp_temp left_r = munchExp(e->u.BINOP.left);
+    Temp_temp right_r = munchExp(e->u.BINOP.right);
+    sprintf(str, "%s `s1, `d0\n", cmd);
     emit(AS_Oper(str,
-                L(r, NULL), L(munchExp(e->u.BINOP.left),
-                    L(munchExp(e->u.BINOP.right), NULL)), NULL
+                L(left_r, NULL), L(left_r, L(right_r, NULL)), NULL
                 ));
     return r;
 }
@@ -320,7 +325,7 @@ static void munchMoveStm(T_stm stm) {
                 /*
                  * STORE M[e1+CONST(i)] <- e2
                  */
-                sprintf(instr, "%s M[`s0+%d] <- `s1\n", AS_STORE, mem_exp->u.BINOP.left->u.CONST);
+                sprintf(instr, "%s `s1, %d(`s0)\n", AS_STORE, mem_exp->u.BINOP.left->u.CONST);
                 emit(AS_Oper(instr, NULL,
                             L(munchExp(mem_exp->u.BINOP.right),
                                 L(munchExp(src), NULL)), NULL));
@@ -331,7 +336,7 @@ static void munchMoveStm(T_stm stm) {
                 /*
                  * STORE M[e1+CONST(i)] <- e2
                  */
-                sprintf(instr, "%s M[`s0+%d] <- `s1\n",AS_STORE, mem_exp->u.BINOP.right->u.CONST);
+                sprintf(instr, "%s `s1, %d(`s0)\n",AS_STORE, mem_exp->u.BINOP.right->u.CONST);
                 emit(AS_Oper(instr, NULL,
                             L(munchExp(mem_exp->u.BINOP.left),
                                 L(munchExp(src), NULL)), NULL
@@ -344,35 +349,36 @@ static void munchMoveStm(T_stm stm) {
             /*
              * MOVE(MEM(e1), MEM(e2))
              */
-            sprintf(instr, "%s M[`s0 + 0] <- M[`s1 + 0]\n", AS_MOVE);
-            emit(AS_Oper(instr, NULL,
+            Temp_temp r = Temp_newtemp();
+            sprintf(instr, "%s 0(`s1), `d0\n%s `s2, (`s0)\n", AS_MOVE, AS_MOVE);
+            emit(AS_Oper(instr, L(r, NULL),
                         L(munchExp(mem_exp),
-                            L(munchExp(src->u.MEM), NULL)), NULL
-                        ));
+                            L(munchExp(src->u.MEM), L(r, NULL))), NULL));
             return;
         }
 
         if (mem_exp->kind == T_CONST) {
             /* MOVE(MEM(CONST(i)), e) */
-            sprintf(instr, "%s M[r0+%d] <- `s0\n", AS_STORE, mem_exp->u.CONST);
+            /*! TODO: fix
+             */
+            sprintf(instr, "%s `s0, %d\n", AS_STORE, mem_exp->u.CONST);
             emit(AS_Oper(instr, NULL,
-                        L(munchExp(src), NULL), NULL
-                        ));
+                        L(munchExp(src), NULL), NULL));
             return;
         }
 
         /* MOVE(MEM(a), e) */
-        sprintf(instr, "%s M[`s0] <- `s1\n", AS_STORE);
+        sprintf(instr, "%s `s1, (`s0)\n", AS_STORE);
         emit(AS_Oper(instr, NULL, L(munchExp(mem_exp),
-                        L(munchExp(src), NULL)), NULL
-                        ));
+                        L(munchExp(src), NULL)), NULL));
         return;
     }
 
     if (dst->kind == T_TEMP) {
-        sprintf(instr, "%s `d0 <- `s0 + r0\n", AS_ADD);
-        emit(AS_Move(instr, Temp_TempList(dst->u.TEMP, NULL),
-                    Temp_TempList(munchExp(src), NULL)));
+        /* move e -> temp */
+        sprintf(instr, "%s `s0, `d0\n", AS_MOVE);
+        emit(AS_Oper(instr, Temp_TempList(dst->u.TEMP, NULL),
+                    Temp_TempList(munchExp(src), L(dst->u.TEMP, NULL)), NULL));
         return;
     }
 
@@ -384,6 +390,10 @@ static Temp_tempList munchArgs(int n, T_expList args) {
         return NULL;
     }
 
-    return Temp_TempList(munchExp(args->head),
+    Temp_temp r = munchExp(args->head);
+    char buf[200];
+    sprintf(buf, "pushl `s\n");
+    emit(AS_Oper(buf, NULL, L(r, NULL), NULL));
+    return Temp_TempList(r,
             munchArgs(n + 1, args->tail));
 }

@@ -116,8 +116,8 @@ struct Live_graph Live_liveness(G_graph flow) {
             Temp_tempList node_out_old = lookupLiveMap(out_tmps, node);
 
             Temp_tempList node_out = calc_node_outs(node, in_tmps);
-            Temp_tempList node_in = Temp_ListUnion(FG_use(node),
-                    Temp_ListExclude(node_out, FG_def(node)));
+            Temp_tempList node_in = Temp_ListUnion(
+                FG_use(node), Temp_ListExclude(node_out, FG_def(node)));
 
             if (!Temp_ListEqual(node_in, node_in_old)) {
                 enterLiveMap(in_tmps, node, node_in);

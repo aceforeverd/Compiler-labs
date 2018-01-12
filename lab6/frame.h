@@ -11,6 +11,7 @@
 Temp_map F_tempMap;
 
 extern const int F_wordSize;
+extern const int SL_OFFSET;
 
 typedef struct F_frame_ *F_frame;
 
@@ -51,7 +52,7 @@ struct F_fragList_ {
 };
 
 F_fragList F_FragList(F_frag head, F_fragList tail);
-void F_FragListAppend(F_fragList list, F_frag item);
+F_fragList F_FragListAppend(F_fragList list, F_frag item);
 
 T_exp F_framePtr();
 T_exp F_preFrame(T_exp exp);
@@ -66,7 +67,9 @@ F_access F_allocLocal(F_frame f, bool escape);
 T_exp F_externalCall(string s, T_expList args);
 
 T_stm F_procEntryExit1(F_frame frame, T_stm stm);
+
 AS_instrList F_procEntryExit2(AS_instrList body);
+
 AS_proc F_procEntryExit3(F_frame frame, AS_instrList body);
 
 F_frame outermost_frame();
@@ -77,7 +80,7 @@ string F_getLabel(F_frame frame);
 Temp_temp F_FP();
 Temp_temp F_SP();
 Temp_temp F_ZERO();
-Temp_temp F_RA();
+/* Temp_temp F_RA(); */
 Temp_temp F_RV();
 
 Temp_tempList CalleeSaves();
@@ -92,5 +95,13 @@ Temp_temp Temp_regLookup(string name);
 Temp_temp Temp_toTemp(string name);
 
 void F_echoFrame(F_frame f);
+
+Temp_map F_newMap();
+
+Temp_tempList F_ava_registers();
+
+string gen_instruction(string i);
+
+T_exp F_ExpAddress(F_access acc, T_exp framePtr);
 
 #endif
