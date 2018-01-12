@@ -19,11 +19,11 @@ static char *AS_SUB = "SUB";
 static char *AS_SUBI = "SUBI";
 static char *AS_MUL = "MUL";
 static char *AS_DIV = "DIV";
-static char *AS_MOVE = "MOVE";
+static char *AS_MOVE = "movl";
 static char *AS_STORE = "STORE";
-static char *AS_LOAD = "LOAD";
-static char *AS_JMP = "JMP";
-static char *AS_CALL = "CALL";
+static char *AS_LOAD = "movl";
+static char *AS_JMP = "jmp";
+static char *AS_CALL = "call";
 static char *AS_UNKNOW = "UNKNOW";
 static char *AS_CMP = "CMP";
 
@@ -94,14 +94,14 @@ static Temp_temp munchExp(T_exp e) {
             return e->u.TEMP;
         case T_NAME:
             {
-                Temp_temp r = Temp_newtemp();
+                /* Temp_temp r = Temp_newtemp(); */
                 sprintf(str, "`j0\n");
                 /* emit(AS_Label(str, e->u.NAME)); */
-                emit(AS_Oper(str, NULL, NULL, AS_Targets(Temp_LabelList(e->u.NAME, NULL))));
+                /* emit(AS_Oper(str, NULL, NULL, AS_Targets(Temp_LabelList(e->u.NAME, NULL)))); */
 
                 /*! TODO: return need fix
                 */
-                return r;
+                return NULL;
             }
 
         case T_ESEQ:
@@ -109,11 +109,13 @@ static Temp_temp munchExp(T_exp e) {
             return munchExp(e->u.ESEQ.exp);
         case T_CALL:
             {
-                Temp_temp r = munchExp(e->u.CALL.fun);
+                assert(e->u.CALL.fun->kind == T_NAME);
+                munchExp(e->u.CALL.fun);
                 Temp_tempList list = munchArgs(0, e->u.CALL.args);
-                sprintf(str, "%s `s0\n", AS_CALL);
-                emit(AS_Oper(str, CallDefs(), L(r, list), NULL));
-                return r;
+                sprintf(str, "%s %s\n", AS_CALL, S_name(e->u.CALL.fun->u.NAME));
+                emit(AS_Oper(str, CallDefs(), list,
+                            AS_Targets(Temp_LabelList(e->u.CALL.fun->u.NAME, NULL))));
+                return F_RV();
             }
     }
 
@@ -144,7 +146,9 @@ static void munchStm(T_stm stm) {
             return;
         case T_JUMP:
             sprintf(instr, "%s `j0\n", AS_JMP);
-            emit(AS_Oper(instr, NULL, Temp_TempList(munchExp(stm->u.JUMP.exp), NULL),
+            // suck
+            Temp_temp r = munchExp(stm->u.JUMP.exp);
+            emit(AS_Oper(instr, NULL, NULL,
                         AS_Targets(stm->u.JUMP.jumps)));
             return;
         case T_CJUMP:
