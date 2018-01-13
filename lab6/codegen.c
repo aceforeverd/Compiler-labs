@@ -94,11 +94,11 @@ static Temp_temp munchExp(T_exp e) {
             return e->u.TEMP;
         case T_NAME:
             {
-                /* Temp_temp r = Temp_newtemp(); */
-                /* sprintf(str, "leal %s, `d0\n", S_name(e->u.NAME)); */
-                /* emit(AS_Oper(str, L(r, NULL), NULL, NULL)); */
-                /* return r; */
-                return NULL;
+                Temp_temp r = Temp_newtemp();
+                sprintf(str, "leal %s, `d0\n", S_name(e->u.NAME));
+                emit(AS_Oper(str, L(r, NULL), NULL, NULL));
+                return r;
+                /* return NULL; */
             }
 
         case T_ESEQ:

@@ -63,8 +63,9 @@ static void doProc(FILE *out, F_frame frame, T_stm body) {
      * printf("-------====trace=====-----\n");
      */
     iList = F_codegen(frame, stmList); /* 9 */
+    printf("codegen done\n");
 
-    AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name()));
+    /* AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name())); */
     printf("----======before RA=======-----\n");
 
     // G_graph fg = FG_AssemFlowGraph(iList);  /* 10.1 */
@@ -114,6 +115,9 @@ void doStr(FILE *out, Temp_label label, string str, int size) {
                 break;
             case '\t':
                 fprintf(out, "\\t");
+                break;
+            case '\b':
+                fprintf(out, "\\b");
                 break;
             default:
                 fprintf(out, "%c", str[i]);
