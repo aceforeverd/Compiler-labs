@@ -328,13 +328,13 @@ Temp_tempList MulDefs() {
 Temp_tempList F_registers() {
     return Temp_TempList(Temp_explicitTemp(REG_ESP),
             Temp_TempList(Temp_explicitTemp(REG_EBP),
-                F_ava_registers()));
+                Temp_TempList(Temp_explicitTemp(REG_EAX),
+                F_ava_registers())));
 }
 
 Temp_tempList F_ava_registers() {
     if (!f_registers) {
-        f_registers = Temp_TempList(
-            Temp_explicitTemp(REG_EAX),
+        f_registers =
             Temp_TempList(
                 Temp_explicitTemp(REG_EBX),
                 Temp_TempList(
@@ -343,7 +343,7 @@ Temp_tempList F_ava_registers() {
                         Temp_explicitTemp(REG_EDX),
                         Temp_TempList(Temp_explicitTemp(REG_ESI),
                                       Temp_TempList(Temp_explicitTemp(REG_EDI),
-                                                    NULL))))));
+                                                    NULL)))));
     }
     return f_registers;
 }

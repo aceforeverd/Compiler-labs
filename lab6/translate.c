@@ -556,8 +556,14 @@ Tr_exp Tr_varDec(Tr_access access, Tr_exp init) {
     assert(access);
     assert(access->level);
     T_exp init_exp = unEx(init);
-    /* T_exp var = F_ExpAddress(access->access, F_framePtr()); */
-    T_stm stm = T_Move(F_Exp(access->access, F_framePtr()), init_exp);
+
+    T_stm stm;
+    /* if (init_exp->kind == T_ESEQ) { */
+    /*     stm = T_Seq(init_exp->u.ESEQ.stm, T_Move( */
+    /*             F_Exp(access->access, F_framePtr()), init_exp->u.ESEQ.exp)); */
+    /* } else { */
+    stm = T_Move(F_Exp(access->access, F_framePtr()), init_exp);
+    /* } */
     return Tr_Nx(stm);
 }
 

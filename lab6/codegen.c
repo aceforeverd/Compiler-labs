@@ -325,6 +325,11 @@ static void munchMoveStm(T_stm stm) {
                 /*
                  * STORE M[e1+CONST(i)] <- e2
                  */
+                if (src->kind == T_CONST) {
+                    sprintf(instr, "%s $%d, %d(`s0)\n", AS_STORE, src->u.CONST, mem_exp->u.BINOP.left->u.CONST);
+                    emit(AS_Oper(instr, NULL, L(munchExp(mem_exp->u.BINOP.right), NULL), NULL));
+                    return ;
+                }
                 sprintf(instr, "%s `s1, %d(`s0)\n", AS_STORE, mem_exp->u.BINOP.left->u.CONST);
                 emit(AS_Oper(instr, NULL,
                             L(munchExp(mem_exp->u.BINOP.right),
@@ -336,6 +341,11 @@ static void munchMoveStm(T_stm stm) {
                 /*
                  * STORE M[e1+CONST(i)] <- e2
                  */
+                if (src->kind == T_CONST) {
+                    sprintf(instr, "%s $%d, %d(`s0)\n", AS_STORE, src->u.CONST, mem_exp->u.BINOP.right->u.CONST);
+                    emit(AS_Oper(instr, NULL, L(munchExp(mem_exp->u.BINOP.left), NULL), NULL));
+                    return ;
+                }
                 sprintf(instr, "%s `s1, %d(`s0)\n",AS_STORE, mem_exp->u.BINOP.right->u.CONST);
                 emit(AS_Oper(instr, NULL,
                             L(munchExp(mem_exp->u.BINOP.left),
@@ -376,6 +386,11 @@ static void munchMoveStm(T_stm stm) {
 
     if (dst->kind == T_TEMP) {
         /* move e -> temp */
+        if (src->kind == T_BINOP && src->u.BINOP.right->kind == T_CONST && src->u.BINOP.op == T_plus) {
+            sprintf(instr, "leal %d(`s0), `d0\n", src->u.BINOP.right->u.CONST);
+            emit(AS_Oper(instr, L(dst->u.TEMP, NULL), L(munchExp(src->u.BINOP.left), NULL), NULL));
+            return;
+        }
         sprintf(instr, "%s `s0, `d0\n", AS_MOVE);
         emit(AS_Oper(instr, Temp_TempList(dst->u.TEMP, NULL),
                     Temp_TempList(munchExp(src), L(dst->u.TEMP, NULL)), NULL));

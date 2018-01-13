@@ -23,12 +23,13 @@ static int COL_simplify(LiveGraph ig, G_nodeList *simp, SelectStack *sstack);
 static int select_spill(G_graph ig, SelectStack *sstack, int K);
 static void assign_color(G_graph graph, SelectStack sstack, int *temps_mapping,
                          Temp_tempList regs);
-static int assign_color_to_node(G_node node, int *temps_mapping,
-                                Temp_tempList regs);
+static int assign_color_to_node(G_node node, int *temps_mapping, Temp_tempList regs,
+                                Temp_tempList ava_regs);
 static int node_color(G_node node, int *temp_mapping);
 static int *make_color_list(Temp_tempList list, int n);
 static Temp_temp nthTemp(Temp_tempList list, int i);
 static void dump_temp_mapping(int *temp_mapping, int length);
+static int hash(int i, int s);
 
 /*
  * @parameters:
@@ -51,10 +52,10 @@ struct COL_result COL_color(LiveGraph lg, Temp_map initial,
     G_nodeList simplify_list ;
     G_nodeList freeze_list ;
     G_nodeList spill_list ;
-    COL_make_worklist(lg, &simplify_list, &freeze_list, &spill_list, n_regs);
+    /* COL_make_worklist(lg, &simplify_list, &freeze_list, &spill_list, n_regs); */
 
     G_graph graph = lg->graph;
-    G_nodeList node_list = G_nodes(graph);
+    G_nodeList node_list = G_reverseNodeList(G_nodes(graph));
 
     int temp_num = G_nodeCount(graph);
     int temps_mapping[temp_num];
@@ -62,6 +63,7 @@ struct COL_result COL_color(LiveGraph lg, Temp_map initial,
         temps_mapping[i] = -1;
     }
 
+    int timer = 0;
     while (node_list) {
         G_node node = node_list->head;
         Temp_temp t = (Temp_temp) G_nodeInfo(node);
@@ -70,11 +72,11 @@ struct COL_result COL_color(LiveGraph lg, Temp_map initial,
             printf("already assigned r%d => %s\n", Temp_num(t), Temp_look(F_Temps(), t));
             temps_mapping[G_nodeKey(node)] = index;
         } else {
-            assign_color_to_node(node, temps_mapping, ava_regs);
+            assign_color_to_node(node, temps_mapping, regs, ava_regs);
 
             int color_index = temps_mapping[G_nodeKey(node)];
             assert(color_index >= 0 && color_index < temp_num);
-            string reg_name = Temp_look(F_Temps(), nthTemp(ava_regs, color_index));
+            string reg_name = Temp_look(F_Temps(), nthTemp(regs, color_index));
             printf("assign register: r%d => %s\n", Temp_num(t), reg_name);
             Temp_enter(ret.coloring, t, String(reg_name));
         }
@@ -111,18 +113,20 @@ static int COL_simplify(LiveGraph liveGraph, G_nodeList *simp_list,
 
 static void assign_color(G_graph graph, SelectStack sstack, int *temp_mapping,
                          Temp_tempList regs) {
-    while (sstack) {
-        G_addNode(sstack->head);
-        if (assign_color_to_node(sstack->head, temp_mapping, regs) < 0) {
-            printf("failed to assign color\n");
-            assert(0);
-        }
+    /*
+     * while (sstack) {
+     *     G_addNode(sstack->head);
+     *     if (assign_color_to_node(sstack->head, temp_mapping, regs) < 0) {
+     *         printf("failed to assign color\n");
+     *         assert(0);
+     *     }
 
-        sstack = sstack->tail;
-    }
+     *     sstack = sstack->tail;
+     * }
+     */
 }
 
-static int assign_color_to_node(G_node node, int *temps_mapping, Temp_tempList regs) {
+static int assign_color_to_node(G_node node, int *temps_mapping, Temp_tempList regs, Temp_tempList ava_regs) {
     int reg_num = Temp_ListLength(regs);
     int reg_list[reg_num];
     for (int i = 0; i< reg_num; i++) {
@@ -130,6 +134,7 @@ static int assign_color_to_node(G_node node, int *temps_mapping, Temp_tempList r
     }
 
     G_nodeList neighbors = G_succ(node);
+    printf("node %d have %d neighbors\n", Temp_num(G_nodeInfo(node)), G_NodeListLength(neighbors));
     while (neighbors) {
         /* printf("%d\t", Temp_num(G_nodeInfo(neighbors->head))); */
         int index = node_color(neighbors->head, temps_mapping);
@@ -140,10 +145,14 @@ static int assign_color_to_node(G_node node, int *temps_mapping, Temp_tempList r
         }
         neighbors = neighbors->tail;
     }
-    printf("\n");
 
+    int p = hash(G_nodeKey(node), reg_num);
+    if (reg_list[p] == 0 && Temp_ListInclude(ava_regs, nthTemp(regs, p))) {
+        temps_mapping[G_nodeKey(node)] = p;
+        return 0;
+    }
     for (int i = 0 ; i < reg_num; i++) {
-        if (reg_list[i] == 0 ) {
+        if (reg_list[i] == 0 && Temp_ListInclude(ava_regs, nthTemp(regs, i)) ) {
             /* use this color */
             temps_mapping[G_nodeKey(node)] = i;
             return 0;
@@ -233,4 +242,8 @@ static void dump_temp_mapping(int *temp_mapping, int length) {
         printf("%d => %d, ", i, temp_mapping[i]);
     }
     printf("\n");
+}
+
+static int hash(int i, int s) {
+    return i % s;
 }
