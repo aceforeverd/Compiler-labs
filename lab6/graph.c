@@ -136,7 +136,7 @@ bool G_inGraph(G_graph graph, G_node node) {
 void G_addEdge(G_node from, G_node to) {
     assert(from);
     assert(to);
-    /* assert(from->mygraph == to->mygraph); */
+    assert(from->mygraph == to->mygraph);
 
     if (G_goesTo(from, to))
         return;

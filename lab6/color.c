@@ -140,6 +140,7 @@ static int assign_color_to_node(G_node node, int *temps_mapping, Temp_tempList r
     while (neighbors) {
         /* printf("%d\t", Temp_num(G_nodeInfo(neighbors->head))); */
         int index = node_color(neighbors->head, temps_mapping);
+        printf("neighbors node color : %d, nodeKey: %d\n", index, G_nodeKey(neighbors->head));
         assert(index < reg_num);
         if (index >= 0) {
             /* exclude the register */
@@ -147,6 +148,11 @@ static int assign_color_to_node(G_node node, int *temps_mapping, Temp_tempList r
         }
         neighbors = neighbors->tail;
     }
+
+    for (int i = 0; i < reg_num; i++) {
+        printf("%d\t", reg_list[i]);
+    }
+    printf("\n");
 
     int p = hash(G_nodeKey(node), reg_num - 1);
     if (reg_list[p] == 0 && Temp_ListInclude(ava_regs, nthTemp(regs, p))) {

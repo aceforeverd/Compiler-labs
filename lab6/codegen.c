@@ -331,9 +331,8 @@ static Temp_temp munchBinExp(T_exp e) {
     Temp_temp right_r = munchExp(e->u.BINOP.right);
     sprintf(str, "%s `s1, `d0\n", cmd);
     emit(AS_Oper(str,
-                L(left_r, NULL), L(left_r, L(right_r, NULL)), NULL
-                ));
-    return r;
+                L(right_r, NULL), L(right_r, L(left_r, NULL)), NULL));
+    return right_r;
 }
 
 

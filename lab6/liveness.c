@@ -69,7 +69,7 @@ G_node Live_find_node(G_graph graph, Temp_temp temp) {
     G_nodeList node_list = G_nodes(graph);
     while (node_list) {
         if (Temp_equal(temp, (Temp_temp) G_nodeInfo(node_list->head))) {
-            return G_nodeInfo(node_list->head);
+            return node_list->head;
         }
         node_list = node_list->tail;
     }
