@@ -140,4 +140,6 @@ T_exp T_Call(T_exp, T_expList);
 T_relOp T_notRel(T_relOp);  /* a op b    ==     not(a notRel(op) b)  */
 T_relOp T_commute(T_relOp); /* a op b    ==    b commute(op) a       */
 
+T_stm rewrite_stm(T_stm s);
+
 #endif

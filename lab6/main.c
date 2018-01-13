@@ -65,7 +65,7 @@ static void doProc(FILE *out, F_frame frame, T_stm body) {
     iList = F_codegen(frame, stmList); /* 9 */
     printf("codegen done\n");
 
-    /* AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name())); */
+    AS_printInstrList(stdout, iList, Temp_layerMap(F_tempMap, Temp_name()));
     printf("----======before RA=======-----\n");
 
     // G_graph fg = FG_AssemFlowGraph(iList);  /* 10.1 */

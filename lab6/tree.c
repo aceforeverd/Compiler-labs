@@ -176,3 +176,30 @@ T_relOp T_commute(T_relOp r) {
     assert(0);
     return 0;
 }
+
+/*
+ * T_stm rewrite_stm(T_stm s) {
+ *     switch (s->kind) {
+ *         case T_SEQ:
+ *         {
+ *             s->u.SEQ.left = rewrite_stm(s->u.SEQ.left);
+ *             s->u.SEQ.right = rewrite_stm(s->u.SEQ.right);
+ *             break;
+ *         }
+ *         case T_LABEL: case T_JUMP: case T_CJUMP: case T_MOVE:
+ *             return s;
+ *         case T_EXP:
+ *         {
+ *             s->u.EXP = rewrite_exp(s->u.EXP);
+ *         }
+ *     }
+ *     return s;
+ * }
+ * 
+ * T_exp rewrite_exp(T_exp e) {
+ *     assert(e);
+ *     switch(e->kind) {
+ *         case T_BINOP:
+ *     }
+ * }
+ */

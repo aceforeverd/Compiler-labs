@@ -13,8 +13,8 @@
 //Lab 6: put your code here
 #define INSTLEN 128
 
-static char *AS_ADD = "ADD";
-static char *AS_ADDI = "ADDI";
+static char *AS_ADD = "add";
+static char *AS_ADDI = "add";
 static char *AS_SUB = "SUB";
 static char *AS_SUBI = "SUBI";
 static char *AS_MUL = "imull";
@@ -105,15 +105,25 @@ static Temp_temp munchExp(T_exp e) {
             munchStm(e->u.ESEQ.stm);
             return munchExp(e->u.ESEQ.exp);
         case T_CALL:
-            {
-                assert(e->u.CALL.fun->kind == T_NAME);
-                /* munchExp(e->u.CALL.fun); */
-                Temp_tempList list = munchArgs(0, e->u.CALL.args);
-                sprintf(str, "%s %s\n", AS_CALL, S_name(e->u.CALL.fun->u.NAME));
-                emit(AS_Oper(str, CallDefs(), L(F_RV(), list),
-                            AS_Targets(Temp_LabelList(e->u.CALL.fun->u.NAME, NULL))));
-                return F_RV();
-            }
+        {
+            assert(e->u.CALL.fun->kind == T_NAME);
+            emit(AS_Oper("pushl %ebx\npushl %ecx\npushl %edx\npushl %edi\n", NULL, NULL, NULL));
+
+            Temp_tempList list = munchArgs(0, e->u.CALL.args);
+            /* munchExp(e->u.CALL.fun); */
+
+            sprintf(str, "%s %s\n", AS_CALL, S_name(e->u.CALL.fun->u.NAME));
+            emit(AS_Oper(str, CallDefs(), L(F_RV(), list),
+                        AS_Targets(Temp_LabelList(e->u.CALL.fun->u.NAME, NULL))));
+
+            int param_length = Temp_ListLength(list);
+            sprintf(str, "%s $%d, %%esp", AS_ADDI, param_length * F_wordSize);
+            emit(AS_Oper(str, NULL, NULL, NULL));
+
+            emit(AS_Oper("popl %edi\npopl %edx\npopl %ecx\npopl %ebx\n", NULL, NULL, NULL));
+
+            return F_RV();
+        }
     }
 
     /* you can not touch here */
@@ -144,7 +154,7 @@ static void munchStm(T_stm stm) {
         case T_JUMP:
             sprintf(instr, "%s `j0\n", AS_JMP);
             // suck
-            munchExp(stm->u.JUMP.exp);
+            /* munchExp(stm->u.JUMP.exp); */
             emit(AS_Oper(instr, NULL, NULL,
                         AS_Targets(stm->u.JUMP.jumps)));
             return;
@@ -281,7 +291,7 @@ static Temp_temp munchBinExp(T_exp e) {
         if (e->u.BINOP.left->kind == T_CONST && e->u.BINOP.op == T_plus) {
             /* ADDI */
             Temp_temp rs = munchExp(e->u.BINOP.right);
-            sprintf(str, "addi %d, `d0\n", e->u.BINOP.left->u.CONST);
+            sprintf(str, "add %d, `d0\n", e->u.BINOP.left->u.CONST);
             emit(AS_Oper(str,
                      L(r, NULL), L(rs, NULL), NULL));
             return r;
@@ -304,7 +314,6 @@ static Temp_temp munchBinExp(T_exp e) {
     T_exp left = e->u.BINOP.left;
     if (left->kind == T_MEM)
     {
-        printf("=dafas========>>><<\n");
         T_exp m_exp = left->u.MEM;
         if (m_exp->kind == T_BINOP && m_exp->u.BINOP.left->kind == T_CONST
                 && m_exp->u.BINOP.right->kind == T_TEMP) {
@@ -328,11 +337,17 @@ static Temp_temp munchBinExp(T_exp e) {
      * the normal things
      * ADD, SUB, MUL, DIV
      */
+    if (e->u.BINOP.left->kind == T_CALL) {
+        printf("cath yyyyy\n");
+    }
     Temp_temp left_r = munchExp(e->u.BINOP.left);
     if (e->u.BINOP.right->kind == T_CALL) {
         emit(AS_Oper("pushl `s0\n", NULL, Temp_TempList(left_r, NULL), NULL));
     }
     Temp_temp right_r = munchExp(e->u.BINOP.right);
+    if (e->u.BINOP.right->kind == T_CALL) {
+        emit(AS_Oper("popl `d0\n", Temp_TempList(left_r, NULL), NULL, NULL));
+    }
     sprintf(str, "%s `s1, `d0\n", cmd);
     emit(AS_Oper(str,
                 L(right_r, NULL), L(right_r, L(left_r, NULL)), NULL));
@@ -442,7 +457,7 @@ static Temp_tempList munchArgs(int n, T_expList args) {
     char buf[200];
     if (args->head->kind == T_NAME) {
         r = Temp_newtemp();
-        sprintf(buf,"leal %s, `d0\n", S_name(args->head->u.NAME));
+        sprintf(buf, "leal %s, `d0\n", S_name(args->head->u.NAME));
         emit(AS_Oper(buf, L(r, NULL), NULL, NULL));
     } else {
         r = munchExp(args->head);

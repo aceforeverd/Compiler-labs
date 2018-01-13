@@ -332,8 +332,7 @@ Temp_tempList CalleeSaves() {
 
 /* return a list of temp that reserved by call function */
 Temp_tempList CallDefs() {
-    return Temp_TempList(Temp_explicitTemp(REG_CALLER_SAVE),
-            CalleeSaves());
+    return CalleeSaves();
 }
 /* return a list of temps that reserved by MUL AND DIV */
 Temp_tempList MulDefs() {
