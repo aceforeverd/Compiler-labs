@@ -354,7 +354,8 @@ void Temp_enter(Temp_map m, Temp_temp t, string s) {
 
 string Temp_look(Temp_map m, Temp_temp t) {
     string s;
-    assert(m && m->tab);
+    assert(m );
+    assert(m->tab);
     s = TAB_look(m->tab, t);
     if (s)
         return s;

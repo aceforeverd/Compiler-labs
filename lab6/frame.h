@@ -106,4 +106,6 @@ T_exp F_ExpAddress(F_access acc, T_exp framePtr);
 
 F_access F_allocParam(F_frame f, int nth);
 
+bool F_findProc(F_fragList list, string name);
+
 #endif

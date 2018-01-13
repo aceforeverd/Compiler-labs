@@ -102,6 +102,21 @@ F_frag F_ProcFrag(T_stm body, F_frame frame) {
     return f;
 }
 
+bool F_findProc(F_fragList list, string name) {
+    if (!list) return FALSE;
+    assert(name);
+    while (list) {
+        if (list->head->kind == F_procFrag &&
+                strcmp(S_name(list->head->u.proc.frame->name), name) == 0) {
+            return TRUE;
+        }
+
+        list = list->tail;
+    }
+
+    return FALSE;
+}
+
 F_frag F_string(Temp_label label, string str) {
 
 }

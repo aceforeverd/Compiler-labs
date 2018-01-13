@@ -71,7 +71,10 @@ struct COL_result COL_color(LiveGraph lg, Temp_map initial,
             printf("already assigned r%d => %s\n", Temp_num(t), Temp_look(F_Temps(), t));
             temps_mapping[G_nodeKey(node)] = index;
         } else {
-            assign_color_to_node(node, temps_mapping, regs, ava_regs);
+            if (assign_color_to_node(node, temps_mapping, regs, ava_regs) < 0) {
+                fprintf(stderr, "assign color failed\n");
+                temps_mapping[G_nodeKey(node)] = 5;
+            }
 
             int color_index = temps_mapping[G_nodeKey(node)];
             assert(color_index >= 0);
@@ -145,7 +148,7 @@ static int assign_color_to_node(G_node node, int *temps_mapping, Temp_tempList r
         neighbors = neighbors->tail;
     }
 
-    int p = hash(G_nodeKey(node), reg_num);
+    int p = hash(G_nodeKey(node), reg_num - 1);
     if (reg_list[p] == 0 && Temp_ListInclude(ava_regs, nthTemp(regs, p))) {
         temps_mapping[G_nodeKey(node)] = p;
         return 0;

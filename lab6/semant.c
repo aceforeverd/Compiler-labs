@@ -157,7 +157,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
         case A_seqExp: {
             A_expList list = aExp->u.seq;
             if (list == NULL || list->head == NULL) {
-                return expTy(NULL, Ty_Void());
+                return expTy(Tr_nilExp(), Ty_Void());
             }
             Ty_ty type = Ty_Void();
             Tr_expList expList =
@@ -232,10 +232,11 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
         }
 
         case A_whileExp: {
+            Temp_label end_label = Temp_newlabel();
             expty_t test_ty =
                 transExp(venv, tenv, aExp->u.whilee.test, level, label);
             expty_t body_ty =
-                transExp(venv, tenv, aExp->u.whilee.body, level, label);
+                transExp(venv, tenv, aExp->u.whilee.body, level, end_label);
             if (test_ty.ty->kind != Ty_int) {
                 EM_error(aExp->u.whilee.test->pos,
                          "test exp must return integer");
@@ -244,11 +245,12 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
                 EM_error(aExp->u.whilee.body->pos,
                          "while body must produce no value");
             }
-            return expTy(Tr_whileExp(test_ty.exp, body_ty.exp), Ty_Void());
+            return expTy(Tr_whileExp(test_ty.exp, body_ty.exp, end_label), Ty_Void());
         }
 
         case A_forExp: {
-            return transExp(venv, tenv, A_TryForToLetExp(aExp), level, label);
+            A_exp for_exp = A_TryForToLetExp(aExp);
+            return transExp(venv, tenv, for_exp, level, label);
             /*
              * S_beginScope(venv);
              * S_enter(venv, aExp->u.forr.var, E_ROVarEntry(Tr_allocLocal(level,
@@ -285,7 +287,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
         }
 
         case A_breakExp: {
-            return expTy(Tr_breakExp(level), Ty_Void());
+            return expTy(Tr_breakExp(level, label), Ty_Void());
         }
 
         case A_letExp: {
@@ -447,7 +449,7 @@ F_fragList SEM_transProg(A_exp exp) {
     Tr_level outermostLevel = Tr_outermost();
     Tr_level newLevel = Tr_newLevel(outermostLevel, Temp_namedlabel("pLevel"), NULL);
     Temp_label label = Temp_newlabel();
-    transExp(venv, tenv, exp, newLevel, label);
+    transExp(venv, tenv, exp, newLevel, NULL);
     return Tr_getResult();
 }
 
@@ -742,7 +744,7 @@ Ty_tyList transFuncParams(S_table tenv, A_fieldList params) {
 
 Tr_expList transSeqExp(S_table venv, S_table tenv, A_expList list,
                        Tr_level level, Temp_label label, Ty_ty *type) {
-    if (!list) {
+    if (!list || !list->head) {
         return NULL;
     }
 

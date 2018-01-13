@@ -52,7 +52,7 @@ Tr_exp Tr_opExp(A_oper op, Tr_exp left, Tr_exp right);
 
 Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp els, Tr_level level);
 
-Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body);
+Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body, Temp_label end_label);
 
 Tr_exp Tr_seqExp(Tr_expList expList);
 
@@ -62,7 +62,7 @@ Tr_exp Tr_letExp(Tr_expList dec_list, Tr_exp body, Tr_level level);
 
 Tr_exp Tr_forExp(Tr_level level);
 
-Tr_exp Tr_breakExp(Tr_level level);
+Tr_exp Tr_breakExp(Tr_level level, Temp_label end_label);
 
 Tr_exp Tr_arrayExp(Tr_exp init, Tr_exp type);
 

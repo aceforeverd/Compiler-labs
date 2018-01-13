@@ -17,7 +17,7 @@ static char *AS_ADD = "ADD";
 static char *AS_ADDI = "ADDI";
 static char *AS_SUB = "SUB";
 static char *AS_SUBI = "SUBI";
-static char *AS_MUL = "MUL";
+static char *AS_MUL = "imull";
 static char *AS_DIV = "DIV";
 static char *AS_MOVE = "movl";
 static char *AS_STORE = "movl";
@@ -25,7 +25,7 @@ static char *AS_LOAD = "movl";
 static char *AS_JMP = "jmp";
 static char *AS_CALL = "call";
 static char *AS_UNKNOW = "UNKNOW";
-static char *AS_CMP = "CMP";
+static char *AS_CMP = "cmpl";
 
 
 /* a list of instructions */
@@ -55,6 +55,7 @@ static void emit(AS_instr inst) {
 }
 
 AS_instrList F_codegen(F_frame f, T_stmList stmList) {
+    printf("start codegen\n");
     AS_instrList list;
     T_stmList sl;
     /*
@@ -67,6 +68,7 @@ AS_instrList F_codegen(F_frame f, T_stmList stmList) {
 
     list = iList;
     iList = last = NULL;
+    printf("end codegen\n");
     return list;
 }
 
@@ -87,7 +89,7 @@ static Temp_temp munchExp(T_exp e) {
             {
                 Temp_temp r = Temp_newtemp();
                 sprintf(str, "%s $%d, `d0\n", AS_MOVE, e->u.CONST);
-                emit(AS_Oper(str, L(r, NULL), Temp_TempList(r, NULL), NULL));
+                emit(AS_Oper(str, L(r, NULL), NULL, NULL));
                 return r;
             }
         case T_TEMP:
@@ -147,16 +149,25 @@ static void munchStm(T_stm stm) {
         case T_JUMP:
             sprintf(instr, "%s `j0\n", AS_JMP);
             // suck
-            Temp_temp r = munchExp(stm->u.JUMP.exp);
+            munchExp(stm->u.JUMP.exp);
             emit(AS_Oper(instr, NULL, NULL,
                         AS_Targets(stm->u.JUMP.jumps)));
             return;
         case T_CJUMP:
-            {
-            Temp_temp right = munchExp(stm->u.CJUMP.right);
-            Temp_temp left = munchExp(stm->u.CJUMP.left);
-            sprintf(instr, "%s `s0, `s1\n", AS_CMP);
-            emit(AS_Oper(instr, NULL, L(left, L(right, NULL)), AS_Targets(NULL)));
+        {
+            if (stm->u.CJUMP.left->kind == T_CONST) {
+                sprintf(instr, "%s `s0, $%d\n", AS_CMP, stm->u.CJUMP.left->u.CONST);
+                emit(AS_Oper(instr, NULL, L(munchExp(stm->u.CJUMP.right), NULL), NULL));
+            } else if (stm->u.CJUMP.right->kind == T_CONST) {
+                sprintf(instr, "%s $%d, `s0\n", AS_CMP, stm->u.CJUMP.right->u.CONST);
+                emit(AS_Oper(instr, NULL, L(munchExp(stm->u.CJUMP.left), NULL), NULL));
+            } else {
+                Temp_temp right = munchExp(stm->u.CJUMP.right);
+                Temp_temp left = munchExp(stm->u.CJUMP.left);
+                sprintf(instr, "%s `s1, `s0\n", AS_CMP);
+                emit(AS_Oper(instr, NULL, L(left, L(right, NULL)), NULL));
+            }
+
             char jmp_cmd[8];
             switch (stm->u.CJUMP.op) {
                 case T_eq:
@@ -275,7 +286,7 @@ static Temp_temp munchBinExp(T_exp e) {
         if (e->u.BINOP.left->kind == T_CONST && e->u.BINOP.op == T_plus) {
             /* ADDI */
             Temp_temp rs = munchExp(e->u.BINOP.right);
-            sprintf(str, "leal %d(`s0), `d0\n", e->u.BINOP.left->u.CONST);
+            sprintf(str, "addi %d, `d0\n", e->u.BINOP.left->u.CONST);
             emit(AS_Oper(str,
                      L(r, NULL), L(rs, NULL), NULL));
             return r;
@@ -287,12 +298,30 @@ static Temp_temp munchBinExp(T_exp e) {
             if (e->u.BINOP.op == T_plus) {
                 sprintf(str, "leal %d(`s0), `d0\n", e->u.BINOP.right->u.CONST);
             } else if (e->u.BINOP.op == T_minus) {
-                sprintf(str, "lead %d(`s0), `d0\n", -e->u.BINOP.right->u.CONST);
+                sprintf(str, "leal %d(`s0), `d0\n", -e->u.BINOP.right->u.CONST);
             }
             emit(AS_Oper(str, L(r, NULL), L(rs, NULL), NULL));
             return r;
         }
     }
+
+    if (e->u.BINOP.op == T_mul && e->u.BINOP.left->kind == T_MEM
+            && e->u.BINOP.left->u.MEM->kind == T_BINOP &&
+                e->u.BINOP.left->u.MEM->u.BINOP.left->kind == T_CONST &&
+                e->u.BINOP.left->u.MEM->u.BINOP.right->kind == T_TEMP) {
+        sprintf(str, "%s %d(`s0)\n",AS_MUL,  e->u.BINOP.left->u.MEM->u.BINOP.left->u.CONST);
+        emit(AS_Oper(str, L(e->u.BINOP.left->u.MEM->u.BINOP.right->u.TEMP, NULL), L(F_RV(), NULL), NULL));
+        return F_RV();
+
+    }
+        /*
+         *      {
+         * sprintf(str, "%s `s0, `d0\n", AS_MUL);
+         * Temp_temp right = munchExp(e->u.BINOP.right);
+         * emit(AS_Oper(str, L(right, NULL), L(munchExp(e->u.BINOP.left), L(right, NULL)), NULL));
+         * return F_RV();
+         */
+    /* } */
 
     /*
      * the normal things

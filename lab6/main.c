@@ -149,15 +149,17 @@ int main(int argc, string *argv) {
         sprintf(outfile, "%s.s", argv[1]);
         out = fopen(outfile, "w");
         /* Chapter 8, 9, 10, 11 & 12 */
-        for (; frags; frags = frags->tail)
+        for (; frags; frags = frags->tail) {
+            printf("2\n");
+            assert(frags->head);
             if (frags->head->kind == F_procFrag) {
-                /* put procFrag into file */
                 doProc(out, frags->head->u.proc.frame,
                        frags->head->u.proc.body);
-            } else if (frags->head->kind == F_stringFrag)
-                /* put stringFrag into file */
+            } else if (frags->head->kind == F_stringFrag) {
                 doStr(out, frags->head->u.stringg.label,
                       frags->head->u.stringg.str);
+            }
+        }
 
         fclose(out);
         return 0;
