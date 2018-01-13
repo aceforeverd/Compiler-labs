@@ -316,6 +316,10 @@ Tr_access Tr_allocLocal(Tr_level level, bool escape) {
     return Tr_Access(level, F_allocLocal(level->frame, escape));
 }
 
+Tr_access Tr_allocParam(Tr_level fun_level, int nth) {
+    return Tr_Access(fun_level, F_allocParam(fun_level->frame, nth));
+}
+
 void Tr_procEntryExit(Tr_level level, Tr_exp body, Tr_accessList formals) {
 
 }
@@ -435,11 +439,12 @@ Tr_exp Tr_ifExp(Tr_exp test, Tr_exp then, Tr_exp els, Tr_level level) {
         cj->u.CJUMP.false_l = Temp_newlabel();
     }
 
-    T_exp ep = T_Eseq( cj, T_Eseq(
-                    T_Seq(T_Label(cj->u.CJUMP.true_l), T_Exp(unEx(then))),
-                    T_Eseq(T_Label(cj->u.CJUMP.false_l), unEx(els))
-            ));
-
+    Temp_temp t = Temp_newtemp();
+    T_exp ep = T_Eseq(T_Seq(cj, T_Seq(T_Seq(T_Label(cj->u.CJUMP.false_l),
+                                        T_Move(T_Temp(t), unEx(els))),
+                                  T_Seq(T_Label(cj->u.CJUMP.true_l),
+                                        T_Move(T_Temp(t), unEx(then))))),
+                  T_Temp(t));
     return Tr_Ex(ep);
 }
 
@@ -464,10 +469,8 @@ Tr_exp Tr_whileExp(Tr_exp test, Tr_exp body) {
         cj->u.CJUMP.true_l = Temp_newlabel();
     }
 
-    return Tr_Nx(T_Seq(cj,
-                T_Seq(T_Seq(T_Label(cj->u.CJUMP.true_l), unNx(body)),
-                      T_Label(cj->u.CJUMP.false_l)
-    )));
+    return Tr_Nx(T_Seq(cj, T_Seq(T_Seq(T_Label(cj->u.CJUMP.true_l), unNx(body)),
+                                 T_Label(cj->u.CJUMP.false_l))));
 }
 
 Tr_exp Tr_seqExp(Tr_expList expList) {
@@ -582,7 +585,8 @@ Tr_exp Tr_funListDec(Tr_expList funcList) {
 /* fun_level->frame has the function name
  * will handle prologue and epilogue of function later */
 Tr_exp Tr_funDec(Tr_exp body, Tr_level fun_level) {
-    Tr_fragListAdd(F_ProcFrag(unNx(body), fun_level->frame));
+    Tr_fragListAdd(F_ProcFrag(
+                T_Move(T_Temp(F_RV()), unEx(body)), fun_level->frame));
     /* just reutnr nothing */
     return Tr_Ex(T_Const(0));
 }

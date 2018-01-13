@@ -222,6 +222,10 @@ F_access F_allocLocal(F_frame f, bool escape) {
     }
 }
 
+F_access F_allocParam(F_frame f, int nth) {
+    return InFrame(SL_OFFSET + F_wordSize * nth);
+}
+
 static F_accessList F_AccessList(F_access head, F_accessList tail) {
     F_accessList list = checked_malloc(sizeof(*list));
 

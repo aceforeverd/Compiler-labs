@@ -81,4 +81,6 @@ Tr_exp Tr_nilExp();
 
 Tr_expList Tr_ExpListAppend(Tr_expList list, Tr_exp t);
 
+Tr_access Tr_allocParam(Tr_level fun_level, int nth);
+
 #endif

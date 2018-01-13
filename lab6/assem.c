@@ -108,7 +108,7 @@ static void format(char *result, string assem, Temp_tempList dst,
                     if (!s) {
                         fprintf(stderr, "entry not found for temp %d\n", Temp_num(nthTemp(dst, n)));
                         printf("instr: %s\n", assem);
-                        assert(0);
+                        s = String("%ebx");
                     }
                     strcpy(result + i, s);
                     i += strlen(s);

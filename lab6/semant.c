@@ -295,7 +295,6 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
             S_beginScope(tenv);
             Tr_expList dec_list_exp = NULL;
             Tr_exp dec_exp = NULL;
-            printf("let\n");
             for (d = aExp->u.let.decs; d; d = d->tail) {
                 dec_exp = transDec(venv, tenv, d->head, level, label);
                 dec_list_exp = Tr_ExpListAppend(dec_list_exp, dec_exp);
@@ -306,7 +305,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp aExp, Tr_level level,
             S_endScope(tenv);
             S_endScope(venv);
 
-            return expTy(Tr_letExp(dec_list_exp, exp.exp, level), Ty_Void());
+            return expTy(Tr_letExp(dec_list_exp, exp.exp, level), exp.ty);
         }
 
         case A_arrayExp: {
@@ -688,16 +687,18 @@ Tr_expList transFunDecBody(S_table venv, S_table tenv, A_fundecList fundecList,
     Ty_tyList formalTys = transFuncParams(tenv, fundecList->head->params);
 
     S_beginScope(venv);
+    E_enventry fun_env = S_look(venv, fundecList->head->name);
 
     A_fieldList l;
     Ty_tyList t;
+    int nth = 0;
     for (l = fundecList->head->params, t = formalTys; l;
          l = l->tail, t = t->tail) {
+        nth ++;
         S_enter(venv, l->head->name,
-                E_VarEntry(Tr_allocLocal(level, TRUE), t->head));
+                E_VarEntry(Tr_allocParam(fun_env->u.fun.level, nth), t->head));
     }
 
-    E_enventry fun_env = S_look(venv, fundecList->head->name);
     if (!fun_env || fun_env->kind == E_varEntry) {
         EM_error(fundecList->head->pos, "function %s not declared\n",
                  S_name(fundecList->head->name));

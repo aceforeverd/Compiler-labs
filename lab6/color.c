@@ -63,7 +63,6 @@ struct COL_result COL_color(LiveGraph lg, Temp_map initial,
         temps_mapping[i] = -1;
     }
 
-    int timer = 0;
     while (node_list) {
         G_node node = node_list->head;
         Temp_temp t = (Temp_temp) G_nodeInfo(node);
@@ -75,7 +74,7 @@ struct COL_result COL_color(LiveGraph lg, Temp_map initial,
             assign_color_to_node(node, temps_mapping, regs, ava_regs);
 
             int color_index = temps_mapping[G_nodeKey(node)];
-            assert(color_index >= 0 && color_index < temp_num);
+            assert(color_index >= 0);
             string reg_name = Temp_look(F_Temps(), nthTemp(regs, color_index));
             printf("assign register: r%d => %s\n", Temp_num(t), reg_name);
             Temp_enter(ret.coloring, t, String(reg_name));

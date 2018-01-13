@@ -153,29 +153,29 @@ static void munchStm(T_stm stm) {
             return;
         case T_CJUMP:
             {
-            Temp_temp left = munchExp(stm->u.CJUMP.left);
             Temp_temp right = munchExp(stm->u.CJUMP.right);
+            Temp_temp left = munchExp(stm->u.CJUMP.left);
             sprintf(instr, "%s `s0, `s1\n", AS_CMP);
             emit(AS_Oper(instr, NULL, L(left, L(right, NULL)), AS_Targets(NULL)));
             char jmp_cmd[8];
             switch (stm->u.CJUMP.op) {
                 case T_eq:
-                    strncpy(jmp_cmd, "je", 2);
+                    strncpy(jmp_cmd, "je", 8);
                     break;
                 case T_ne:
-                    strncpy(jmp_cmd, "jne", 3);
+                    strncpy(jmp_cmd, "jne", 8);
                     break;
                 case T_lt:
-                    strncpy(jmp_cmd, "jl", 2);
+                    strncpy(jmp_cmd, "jl", 8);
                     break;
                 case T_gt:
-                    strncpy(jmp_cmd, "jg", 2);
+                    strncpy(jmp_cmd, "jg", 8);
                     break;
                 case T_le:
-                    strncpy(jmp_cmd, "jle", 3);
+                    strncpy(jmp_cmd, "jle", 8);
                     break;
                 case T_ge:
-                    strncpy(jmp_cmd, "jge", 3);
+                    strncpy(jmp_cmd, "jge", 8);
                     break;
                 default:
                     assert(0);
@@ -405,10 +405,10 @@ static Temp_tempList munchArgs(int n, T_expList args) {
         return NULL;
     }
 
+    Temp_tempList list = munchArgs(n+1, args->tail);
     Temp_temp r = munchExp(args->head);
     char buf[200];
     sprintf(buf, "pushl `s\n");
     emit(AS_Oper(buf, NULL, L(r, NULL), NULL));
-    return Temp_TempList(r,
-            munchArgs(n + 1, args->tail));
+    return Temp_TempList(r, list);
 }

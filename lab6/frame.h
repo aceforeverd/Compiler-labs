@@ -104,4 +104,6 @@ string gen_instruction(string i);
 
 T_exp F_ExpAddress(F_access acc, T_exp framePtr);
 
+F_access F_allocParam(F_frame f, int nth);
+
 #endif
