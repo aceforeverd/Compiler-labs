@@ -95,18 +95,30 @@ static void doProc(FILE *out, F_frame frame, T_stm body) {
     /* fprintf(out, "END %s\n\n", Temp_labelstring(F_name(frame))); */
 }
 
-void doStr(FILE *out, Temp_label label, string str) {
-    fprintf(out, ".section .rodata\n");
-    fprintf(out, ".%s:\n", S_name(label));
+void doStr(FILE *out, Temp_label label, string str, int size) {
+    printf("ths string is : %s\n", str);
+    fprintf(out, ".section .data\n");
+    fprintf(out, "%s:\n", S_name(label));
 
-    int length = *(int *)str;
-    length = length + 4;
+    /* int length = *(int *)str; */
+    /* length = length + 4; */
     // it may contains zeros in the middle of string. To keep this work, we need
     // to print all the charactors instead of using fprintf(str)
+    fprintf(out, ".int %d\n", size);
     fprintf(out, ".string \"");
     int i = 0;
-    for (; i < length; i++) {
-        fprintf(out, "%c", str[i]);
+    for (; i < size; i++) {
+        switch (str[i]) {
+            case '\n':
+                fprintf(out, "\\n");
+                break;
+            case '\t':
+                fprintf(out, "\\t");
+                break;
+            default:
+                fprintf(out, "%c", str[i]);
+                break;
+        }
     }
     fprintf(out, "\"\n");
 
@@ -139,7 +151,6 @@ int main(int argc, string *argv) {
 
         frags = SEM_transProg(absyn_root);
         F_echoFragList(frags);
-        printf("SEM_transProg =======\n");
 
         if (anyErrors) {
             return 1; /* don't continue */
@@ -150,14 +161,15 @@ int main(int argc, string *argv) {
         out = fopen(outfile, "w");
         /* Chapter 8, 9, 10, 11 & 12 */
         for (; frags; frags = frags->tail) {
-            printf("2\n");
             assert(frags->head);
             if (frags->head->kind == F_procFrag) {
                 doProc(out, frags->head->u.proc.frame,
                        frags->head->u.proc.body);
             } else if (frags->head->kind == F_stringFrag) {
                 doStr(out, frags->head->u.stringg.label,
-                      frags->head->u.stringg.str);
+                      frags->head->u.stringg.str,
+                      frags->head->u.stringg.length
+                      );
             }
         }
 

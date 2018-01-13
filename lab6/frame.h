@@ -31,6 +31,7 @@ struct F_frag_ {
         struct {
             Temp_label label;
             string str;
+            int length;
         } stringg;
         struct {
             T_stm body;
@@ -39,7 +40,7 @@ struct F_frag_ {
     } u;
 };
 
-F_frag F_StringFrag(Temp_label label, string str);
+F_frag F_StringFrag(Temp_label label, string str, int length);
 F_frag F_ProcFrag(T_stm body, F_frame frame);
 F_frag F_string(Temp_label label, string str);
 F_frag F_newProgFrag(T_stm body, F_frame frame);

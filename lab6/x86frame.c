@@ -78,16 +78,13 @@ static F_access InReg(Temp_temp reg);
  * make a label for a string
  * the string length followed by the string
  */
-F_frag F_StringFrag(Temp_label label, string str) {
+F_frag F_StringFrag(Temp_label label, string str, int length) {
     F_frag f = checked_malloc(sizeof(*f));
 
     f->kind = F_stringFrag;
-    f->u.stringg.str = str;
+    f->u.stringg.str = String(str);
     f->u.stringg.label = label;
-
-    /*! TODO: write to memory or do it later
-     *  done in main.c
-     */
+    f->u.stringg.length = length;
 
     return f;
 }

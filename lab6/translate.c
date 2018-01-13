@@ -389,9 +389,19 @@ Tr_exp Tr_intExp(int var) {
 
 Tr_exp Tr_stringExp(string str) {
     Temp_label label = Temp_newlabel();
+    int length = strlen(str);
+    /* string new_str = (string) checked_malloc(4 + length); */
+    /* *(int *)new_str = length; */
+    /* strncmp(new_str + 4, str, length); */
 
-    Tr_fragListAdd(F_StringFrag(label, str));
+    Tr_fragListAdd(F_StringFrag(label, str, length));
 
+    Temp_temp r = Temp_newtemp();
+    T_stm string_init = T_Move(T_Temp(r), F_externalCall("allocRecord", T_ExpList(T_Const(8), NULL)));
+    T_stm string_struct = T_Seq(string_init, T_Seq(T_Move(T_Mem(T_Temp(r)), T_Const(length)),
+                T_Move(T_Mem(T_Binop(T_plus, T_Const(4), T_Temp(r))), T_Name(label))
+                ));
+    /* return Tr_Ex(T_Eseq(string_struct, T_Temp(r))); */
     return Tr_Ex(T_Name(label));
 }
 

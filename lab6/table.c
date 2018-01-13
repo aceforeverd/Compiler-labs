@@ -59,7 +59,7 @@ void *TAB_look(TAB_table t, void *key) {
     int index;
     binder b;
     assert(t);
-    assert(key);
+    if (!key) return NULL;
     index = ((unsigned long)key) % TABSIZE;
     for (b = t->table[index]; b; b = b->next)
         if (b->key == key) return b->value;
