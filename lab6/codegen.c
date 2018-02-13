@@ -13,12 +13,12 @@
 //Lab 6: put your code here
 #define INSTLEN 128
 
-static char *AS_ADD = "add";
-static char *AS_ADDI = "add";
+static char *AS_ADD = "addl";
+static char *AS_ADDI = "addl";
 static char *AS_SUB = "SUB";
 static char *AS_SUBI = "SUBI";
 static char *AS_MUL = "imull";
-static char *AS_DIV = "DIV";
+static char *AS_DIV = "divl";
 static char *AS_MOVE = "movl";
 static char *AS_STORE = "movl";
 static char *AS_LOAD = "movl";
@@ -333,13 +333,24 @@ static Temp_temp munchBinExp(T_exp e) {
          */
     /* } */
 
+    if (e->u.BINOP.op == T_div) {
+        sprintf(str, "%s `s0, %%eax\n", AS_MOVE);
+        emit(AS_Oper(str, NULL, L(munchExp(e->u.BINOP.left), NULL), NULL));
+        /* if (e->u.BINOP.right->kind == T_CONST) { */
+        /*     sprintf(str, "%s $%d\n", AS_DIV, e->u.BINOP.right->u.CONST); */
+        /*     emit(AS_Oper(str, L(F_RV(), NULL), NULL, NULL)); */
+        /*     return F_RV(); */
+        /* } */
+
+        sprintf(str, "%s `s0\n", AS_DIV);
+        emit(AS_Oper(str, L(F_RV(), NULL), L(munchExp(e->u.BINOP.right), NULL), NULL));
+        return F_RV();
+    }
+
     /*
      * the normal things
-     * ADD, SUB, MUL, DIV
+     * ADD, SUB, MUL
      */
-    if (e->u.BINOP.left->kind == T_CALL) {
-        printf("cath yyyyy\n");
-    }
     Temp_temp left_r = munchExp(e->u.BINOP.left);
     if (e->u.BINOP.right->kind == T_CALL) {
         emit(AS_Oper("pushl `s0\n", NULL, Temp_TempList(left_r, NULL), NULL));
@@ -350,8 +361,8 @@ static Temp_temp munchBinExp(T_exp e) {
     }
     sprintf(str, "%s `s1, `d0\n", cmd);
     emit(AS_Oper(str,
-                L(right_r, NULL), L(right_r, L(left_r, NULL)), NULL));
-    return right_r;
+                L(left_r, NULL), L(left_r, L(right_r, NULL)), NULL));
+    return left_r;
 }
 
 
